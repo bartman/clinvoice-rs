@@ -41,6 +41,7 @@ pub enum OutputType {
     Txt,
 }
 
+mod data;
 mod log;
 mod generate;
 
