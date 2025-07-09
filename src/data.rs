@@ -14,10 +14,17 @@ pub struct TimeData {
     pub entries: HashMap<NaiveDate, Vec<Entry>>,
 }
 
+enum ParseState {
+    ExpectingDate,
+    ExpectingEntry,
+}
+
 impl TimeData {
     /// Creates a new TimeData instance by loading entries from the specified directory.
+    /// Only processes files with the '.cli' extension.
     /// If start and/or end dates are provided, only entries within that range are loaded.
     /// If none are provided, all entries are loaded.
+    /// Prints error messages for parsing failures to stderr.
     pub fn new(dir_path: &str, start: Option<NaiveDate>, end: Option<NaiveDate>) -> Result<Self, std::io::Error> {
         let mut entries = HashMap::new();
         let path = Path::new(dir_path);
@@ -25,21 +32,49 @@ impl TimeData {
         for entry in fs::read_dir(path)? {
             let entry = entry?;
             let file_path = entry.path();
-            if file_path.is_file() {
+            if file_path.is_file() && file_path.extension().and_then(|s| s.to_str()) == Some("cli") {
                 let content = fs::read_to_string(&file_path)?;
                 let mut current_date: Option<NaiveDate> = None;
+                let mut state = ParseState::ExpectingDate;
 
-                for line in content.lines() {
+                for (line_number, line) in content.lines().enumerate() {
                     let line = line.trim();
                     if line.is_empty() {
                         continue;
                     }
-                    if let Some(date) = parse_date(line) {
-                        current_date = Some(date);
-                    } else if let Some(date) = current_date {
-                        if let Some(entry) = parse_entry(line) {
-                            if (start.is_none() || date >= start.unwrap()) && (end.is_none() || date <= end.unwrap()) {
-                                entries.entry(date).or_insert_with(Vec::new).push(entry);
+                    match state {
+                        ParseState::ExpectingDate => {
+                            if let Some(date) = parse_date(line) {
+                                current_date = Some(date);
+                                state = ParseState::ExpectingEntry;
+                            } else {
+                                eprintln!(
+                                    "{}:{}: Expected date in YYYY.MM.DD or YYYYMMDD format, but found '{}'",
+                                    file_path.display(),
+                                    line_number + 1,
+                                    line
+                                );
+                            }
+                        }
+                        ParseState::ExpectingEntry => {
+                            if let Some(entry) = parse_entry(line) {
+                                if let Some(date) = current_date {
+                                    if (start.is_none() || date >= start.unwrap())
+                                        && (end.is_none() || date <= end.unwrap())
+                                    {
+                                        entries.entry(date).or_insert_with(Vec::new).push(entry);
+                                    }
+                                }
+                            } else if let Some(date) = parse_date(line) {
+                                current_date = Some(date);
+                                // State remains ExpectingEntry
+                            } else {
+                                eprintln!(
+                                    "{}:{}: Expected entry in 'Xh = description' or 'HH:MM-HH:MM = description' format, but found '{}'",
+                                    file_path.display(),
+                                    line_number + 1,
+                                    line
+                                );
                             }
                         }
                     }
