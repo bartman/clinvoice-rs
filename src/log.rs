@@ -1,11 +1,32 @@
 use crate::data::TimeData;
 use crate::Format;
-use chrono::Datelike; // Added to bring Datelike trait into scope
+use crate::ColorOption;
+use chrono::Datelike;
 use std::collections::HashMap;
+use colored::*;
+use atty;
 
-pub fn run(format: Format, directory: &Option<String>, _config: &Option<String>) {
+pub fn run(
+    format: Format,
+    directory: &Option<String>,
+    _config: &Option<String>,
+    color: &ColorOption
+) {
     let dir_path = directory.as_ref().expect("Directory path is required");
-    let time_data = TimeData::new(dir_path, None, None).expect("Failed to load data");
+
+    let use_color_stdout = match color {
+        ColorOption::Always => true,
+        ColorOption::Never => false,
+        ColorOption::Auto => atty::is(atty::Stream::Stdout),
+    };
+
+    let use_color_stderr = match color {
+        ColorOption::Always => true,
+        ColorOption::Never => false,
+        ColorOption::Auto => atty::is(atty::Stream::Stderr),
+    };
+
+    let time_data = TimeData::new(dir_path, None, None, use_color_stderr).expect("Failed to load data");
 
     match format {
         Format::Full => {
@@ -13,14 +34,23 @@ pub fn run(format: Format, directory: &Option<String>, _config: &Option<String>)
             dates.sort();
             for date in dates {
                 for entry in &time_data.entries[date] {
-                    println!(
-                        "{:04}.{:02}.{:02}  {:4}  {}",
-                        date.year(),
-                        date.month(),
-                        date.day(),
-                        entry.hours,
-                        entry.description
-                    );
+                    let date_str = format!("{:04}.{:02}.{:02}", date.year(), date.month(), date.day());
+                    let hours_str = format!("{:4}", entry.hours);
+                    if use_color_stdout {
+                        println!(
+                            "{}  {}  {}",
+                            date_str.blue().bold(),
+                            hours_str.green().bold(),
+                            entry.description
+                        );
+                    } else {
+                        println!(
+                            "{}  {}  {}",
+                            date_str,
+                            hours_str,
+                            entry.description
+                        );
+                    }
                 }
             }
         }
@@ -32,14 +62,23 @@ pub fn run(format: Format, directory: &Option<String>, _config: &Option<String>)
                 let total_hours: f32 = entries.iter().map(|e| e.hours).sum();
                 let descriptions: Vec<_> = entries.iter().map(|e| e.description.as_str()).collect();
                 let desc_str = descriptions.join("; ");
-                println!(
-                    "{:04}.{:02}.{:02}  {:4}  {}",
-                    date.year(),
-                    date.month(),
-                    date.day(),
-                    total_hours,
-                    desc_str
-                );
+                let date_str = format!("{:04}.{:02}.{:02}", date.year(), date.month(), date.day());
+                let hours_str = format!("{:4}", total_hours);
+                if use_color_stdout {
+                    println!(
+                        "{}  {}  {}",
+                        date_str.blue().bold(),
+                        hours_str.green().bold(),
+                        desc_str
+                    );
+                } else {
+                    println!(
+                        "{}  {}  {}",
+                        date_str,
+                        hours_str,
+                        desc_str
+                    );
+                }
             }
         }
         Format::Month => {
@@ -54,7 +93,20 @@ pub fn run(format: Format, directory: &Option<String>, _config: &Option<String>)
             months.sort();
             for (year, month) in months {
                 let total = monthly_totals[&(*year, *month)];
-                println!("{:04}.{:02}  {}", year, month, total);
+                let date_str = format!("{:04}.{:02}", year, month);
+                if use_color_stdout {
+                    println!(
+                        "{}  {}",
+                        date_str.blue().bold(),
+                        total
+                    );
+                } else {
+                    println!(
+                        "{}  {}",
+                        date_str,
+                        total
+                    );
+                }
             }
         }
         Format::Year => {
@@ -68,7 +120,20 @@ pub fn run(format: Format, directory: &Option<String>, _config: &Option<String>)
             years.sort();
             for year in years {
                 let total = yearly_totals[year];
-                println!("{:04}  {}", year, total);
+                let year_str = format!("{:04}", year);
+                if use_color_stdout {
+                    println!(
+                        "{}  {}",
+                        year_str.blue().bold(),
+                        total
+                    );
+                } else {
+                    println!(
+                        "{}  {}",
+                        year_str,
+                        total
+                    );
+                }
             }
         }
     }

@@ -2,6 +2,7 @@ use chrono::{NaiveDate, NaiveTime};
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
+use colored::*;
 
 #[derive(Debug)]
 pub struct Entry {
@@ -15,7 +16,7 @@ pub struct TimeData {
 }
 
 impl TimeData {
-    pub fn new(dir_path: &str, start: Option<NaiveDate>, end: Option<NaiveDate>) -> Result<Self, std::io::Error> {
+    pub fn new(dir_path: &str, start: Option<NaiveDate>, end: Option<NaiveDate>, use_color: bool) -> Result<Self, std::io::Error> {
         let mut entries = HashMap::new();
         let path = Path::new(dir_path);
 
@@ -43,22 +44,39 @@ impl TimeData {
                                 }
                             }
                             Err(err) => {
-                                eprintln!(
-                                    "{}:{}: {}\n\t{}",
-                                    file_path.display(),
-                                    line_number + 1,
-                                    err,
-                                    line
-                                );
+                                let path_line = format!("{}:{}", file_path.display(), line_number + 1);
+                                if use_color {
+                                    eprintln!(
+                                        "{}: {}\n\t{}",
+                                        path_line.yellow().bold(),
+                                        err.red().bold(),
+                                        line
+                                    );
+                                } else {
+                                    eprintln!(
+                                        "{}: {}\n\t{}",
+                                        path_line,
+                                        err,
+                                        line
+                                    );
+                                }
                             }
                         }
                     } else {
-                        eprintln!(
-                            "{}:{}: Expected date, found:\n\t{}",
-                            file_path.display(),
-                            line_number + 1,
-                            line
-                        );
+                        let path_line = format!("{}:{}", file_path.display(), line_number + 1);
+                        if use_color {
+                            eprintln!(
+                                "{}: Expected date, found:\n\t{}",
+                                path_line.yellow().bold(),
+                                line
+                            );
+                        } else {
+                            eprintln!(
+                                "{}: Expected date, found:\n\t{}",
+                                path_line,
+                                line
+                            );
+                        }
                     }
                 }
             }
@@ -94,7 +112,6 @@ fn parse_time_spec(time_spec: &str) -> Result<f32, String> {
         let start_str = parts[0];
         let end_str = parts[1];
 
-        // Normalize: append ":00" if no minutes are specified
         let start_str = if start_str.contains(':') {
             start_str.to_string()
         } else {
@@ -106,7 +123,6 @@ fn parse_time_spec(time_spec: &str) -> Result<f32, String> {
             format!("{}:00", end_str)
         };
 
-        // Parse as NaiveTime with "%H:%M"
         let start = NaiveTime::parse_from_str(&start_str, "%H:%M")
             .map_err(|_| "Invalid start time".to_string())?;
         let end = NaiveTime::parse_from_str(&end_str, "%H:%M")

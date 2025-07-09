@@ -1,12 +1,21 @@
 use clap::{Parser, Subcommand, ValueEnum};
 use clap::CommandFactory;
 
+#[derive(ValueEnum, Clone, Debug)]
+enum ColorOption {
+    Always,
+    Auto,
+    Never,
+}
+
 #[derive(Parser)]
 struct Cli {
     #[clap(short, long)]
     directory: Option<String>,
     #[clap(short, long)]
     config: Option<String>,
+    #[clap(short = 'C', long, default_value = "auto")]
+    color: ColorOption,
     #[clap(subcommand)]
     command: Option<Command>,
 }
@@ -52,10 +61,10 @@ fn main() {
             Cli::command().print_long_help().unwrap();
         }
         Some(Command::Log { format }) => {
-            log::run(format, &cli.directory, &cli.config)
+            log::run(format, &cli.directory, &cli.config, &cli.color)
         },
         Some(Command::Generate { output, r#type, sequence }) => {
-            generate::run(output, r#type, sequence, &cli.directory, &cli.config)
+            generate::run(output, r#type, sequence, &cli.directory, &cli.config, &cli.color)
         }
     }
 }
