@@ -14,7 +14,7 @@ pub fn run(format: Format, directory: &Option<String>, _config: &Option<String>)
             for date in dates {
                 for entry in &time_data.entries[date] {
                     println!(
-                        "{}.{}.{}  {}  {}",
+                        "{:04}.{:02}.{:02}  {:4}  {}",
                         date.year(),
                         date.month(),
                         date.day(),
@@ -33,7 +33,7 @@ pub fn run(format: Format, directory: &Option<String>, _config: &Option<String>)
                 let descriptions: Vec<_> = entries.iter().map(|e| e.description.as_str()).collect();
                 let desc_str = descriptions.join("; ");
                 println!(
-                    "{}.{}.{}  {}  {}",
+                    "{:04}.{:02}.{:02}  {:4}  {}",
                     date.year(),
                     date.month(),
                     date.day(),
@@ -54,7 +54,7 @@ pub fn run(format: Format, directory: &Option<String>, _config: &Option<String>)
             months.sort();
             for (year, month) in months {
                 let total = monthly_totals[&(*year, *month)];
-                println!("{}.{}  {}", year, month, total);
+                println!("{:04}.{:02}  {}", year, month, total);
             }
         }
         Format::Year => {
@@ -68,7 +68,7 @@ pub fn run(format: Format, directory: &Option<String>, _config: &Option<String>)
             years.sort();
             for year in years {
                 let total = yearly_totals[year];
-                println!("{}  {}", year, total);
+                println!("{:04}  {}", year, total);
             }
         }
     }
