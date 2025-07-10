@@ -1,6 +1,7 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use toml::Value;
 use std::fs;
+use std::env;
 
 #[allow(dead_code)]
 pub struct Config {
@@ -8,11 +9,40 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn new(path: &Path) -> Result<Self, std::io::Error> {
-        let content = fs::read_to_string(path)?;
+    pub fn new(config_file: Option<&str>, data_directory: Option<&str>) -> Result<Self, std::io::Error> {
+        let config_path = Self::find_config_path(config_file, data_directory)?;
+        let content = fs::read_to_string(&config_path)?;
         let value: Value = toml::from_str(&content)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
         Ok(Config { value })
+    }
+
+    fn find_config_path(config_file: Option<&str>, data_directory: Option<&str>) -> Result<PathBuf, std::io::Error> {
+        if let Some(path) = config_file {
+            let path = PathBuf::from(path);
+            if path.exists() {
+                return Ok(path);
+            } else {
+                return Err(std::io::Error::new(std::io::ErrorKind::NotFound, "Specified config file does not exist"));
+            }
+        }
+
+        let mut candidates: Vec<PathBuf> = Vec::new();
+        if let Some(dir) = data_directory {
+            candidates.push(Path::new(dir).join("clinvoice.toml"));
+        }
+        candidates.push(PathBuf::from("./clinvoice.toml"));
+        if let Ok(home) = env::var("HOME") {
+            candidates.push(Path::new(&home).join(".config").join("clinvoice").join("clinvoice.toml"));
+        }
+
+        for candidate in candidates {
+            if candidate.exists() {
+                return Ok(candidate);
+            }
+        }
+
+        Err(std::io::Error::new(std::io::ErrorKind::NotFound, "No config file found in searched locations"))
     }
 
     #[allow(dead_code)]
