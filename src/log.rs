@@ -1,4 +1,5 @@
-use crate::data::TimeData;
+use crate::data::{TimeData, DateSelector};
+use crate::parse::{parse_date_arg};
 use crate::Format;
 use crate::ColorOption;
 use chrono::Datelike;
@@ -10,7 +11,8 @@ pub fn run(
     format: Format,
     directory: &Option<String>,
     _config: &Option<String>,
-    color: &ColorOption
+    color: &ColorOption,
+    dates: &[String],
 ) {
     let dir_path = directory.as_ref().expect("Directory path is required");
 
@@ -26,7 +28,18 @@ pub fn run(
         ColorOption::Auto => atty::is(atty::Stream::Stderr),
     };
 
-    let time_data = TimeData::new(dir_path, None, None, use_color_stderr).expect("Failed to load data");
+    let mut selector = DateSelector::new();
+    for date_arg in dates {
+        match parse_date_arg(date_arg) {
+            Ok(range) => selector.add_range(range),
+            Err(err) => {
+                eprintln!("Invalid date argument: {} - {}", date_arg, err);
+                std::process::exit(1);
+            }
+        }
+    }
+
+    let time_data = TimeData::new(dir_path, &selector, use_color_stderr).expect("Failed to load data");
 
     let mut grand_total: f32 = 0.0;
     let grand_total_indent;

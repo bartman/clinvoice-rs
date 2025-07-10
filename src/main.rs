@@ -25,6 +25,8 @@ enum Command {
     Log {
         #[clap(short, long)]
         format: Format,
+        #[clap(value_parser)]
+        dates: Vec<String>,
     },
     Generate {
         #[clap(short, long)]
@@ -50,6 +52,7 @@ pub enum OutputType {
     Txt,
 }
 
+mod parse;
 mod data;
 mod log;
 mod generate;
@@ -60,8 +63,8 @@ fn main() {
         None => {
             Cli::command().print_long_help().unwrap();
         }
-        Some(Command::Log { format }) => {
-            log::run(format, &cli.directory, &cli.config, &cli.color)
+        Some(Command::Log { format, dates }) => {
+            log::run(format, &cli.directory, &cli.config, &cli.color, &dates)
         },
         Some(Command::Generate { output, r#type, sequence }) => {
             generate::run(output, r#type, sequence, &cli.directory, &cli.config, &cli.color)

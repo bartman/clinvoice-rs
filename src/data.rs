@@ -1,4 +1,5 @@
-use chrono::{NaiveDate, NaiveTime};
+use crate::parse::{parse_date, parse_entry};
+use chrono::{NaiveDate};
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
@@ -11,12 +12,41 @@ pub struct Entry {
 }
 
 #[derive(Debug)]
+pub struct DateRange {
+    pub start: NaiveDate,
+    pub end: NaiveDate,
+}
+
+#[derive(Debug)]
+pub struct DateSelector {
+    pub ranges: Vec<DateRange>,
+}
+
+impl DateSelector {
+    pub fn new() -> Self {
+        DateSelector { ranges: Vec::new() }
+    }
+
+    pub fn add_range(&mut self, range: DateRange) {
+        self.ranges.push(range);
+    }
+
+    pub fn selected(&self, date: &NaiveDate) -> bool {
+        if self.ranges.is_empty() {
+            true
+        } else {
+            self.ranges.iter().any(|range| date >= &range.start && date <= &range.end)
+        }
+    }
+}
+
+#[derive(Debug)]
 pub struct TimeData {
     pub entries: HashMap<NaiveDate, Vec<Entry>>,
 }
 
 impl TimeData {
-    pub fn new(dir_path: &str, start: Option<NaiveDate>, end: Option<NaiveDate>, use_color: bool) -> Result<Self, std::io::Error> {
+    pub fn new(dir_path: &str, selector: &DateSelector, use_color: bool) -> Result<Self, std::io::Error> {
         let mut entries = HashMap::new();
         let path = Path::new(dir_path);
 
@@ -35,30 +65,28 @@ impl TimeData {
                     if let Some(date) = parse_date(line) {
                         current_date = Some(date);
                     } else if let Some(date) = current_date {
-                        match parse_entry(line) {
-                            Ok(entry) => {
-                                if (start.is_none() || date >= start.unwrap())
-                                    && (end.is_none() || date <= end.unwrap())
-                                {
+                        if selector.selected(&date) {
+                            match parse_entry(line) {
+                                Ok(entry) => {
                                     entries.entry(date).or_insert_with(Vec::new).push(entry);
                                 }
-                            }
-                            Err(err) => {
-                                let path_line = format!("{}:{}", file_path.display(), line_number + 1);
-                                if use_color {
-                                    eprintln!(
-                                        "{}: {}\n\t{}",
-                                        path_line.yellow().bold(),
-                                        err.red().bold(),
-                                        line
-                                    );
-                                } else {
-                                    eprintln!(
-                                        "{}: {}\n\t{}",
-                                        path_line,
-                                        err,
-                                        line
-                                    );
+                                Err(err) => {
+                                    let path_line = format!("{}:{}", file_path.display(), line_number + 1);
+                                    if use_color {
+                                        eprintln!(
+                                            "{}: {}\n\t{}",
+                                            path_line.yellow().bold(),
+                                            err.red().bold(),
+                                            line
+                                        );
+                                    } else {
+                                        eprintln!(
+                                            "{}: {}\n\t{}",
+                                            path_line,
+                                            err,
+                                            line
+                                        );
+                                    }
                                 }
                             }
                         }
@@ -83,83 +111,4 @@ impl TimeData {
         }
         Ok(TimeData { entries })
     }
-}
-
-fn parse_date(line: &str) -> Option<NaiveDate> {
-    NaiveDate::parse_from_str(line, "%Y.%m.%d")
-        .or_else(|_| NaiveDate::parse_from_str(line, "%Y%m%d"))
-        .or_else(|_| NaiveDate::parse_from_str(line, "%Y-%m-%d"))
-        .ok()
-}
-
-fn parse_time_spec(time_spec: &str) -> Result<f32, String> {
-    let time_spec = time_spec.trim();
-    if time_spec.ends_with('h') {
-        let hours_str = time_spec.trim_end_matches('h');
-        let hours = hours_str
-            .parse::<f32>()
-            .map_err(|_| "Invalid hour format".to_string())?;
-        if hours >= 0.0 {
-            Ok(hours)
-        } else {
-            Err("Negative hours are invalid".to_string())
-        }
-    } else if time_spec.contains('-') {
-        let parts: Vec<&str> = time_spec.split('-').map(|s| s.trim()).collect();
-        if parts.len() != 2 {
-            return Err("Time range must have exactly two parts".to_string());
-        }
-        let start_str = parts[0];
-        let end_str = parts[1];
-
-        let start_str = if start_str.contains(':') {
-            start_str.to_string()
-        } else {
-            format!("{}:00", start_str)
-        };
-        let end_str = if end_str.contains(':') {
-            end_str.to_string()
-        } else {
-            format!("{}:00", end_str)
-        };
-
-        let start = NaiveTime::parse_from_str(&start_str, "%H:%M")
-            .map_err(|_| "Invalid start time".to_string())?;
-        let end = NaiveTime::parse_from_str(&end_str, "%H:%M")
-            .map_err(|_| "Invalid end time".to_string())?;
-
-        let duration = end.signed_duration_since(start);
-        if duration.num_minutes() < 0 {
-            return Err("End time before start time".to_string());
-        }
-        let hours = duration.num_minutes() as f32 / 60.0;
-        Ok(hours)
-    } else {
-        Err("Invalid time specification format".to_string())
-    }
-}
-
-fn parse_entry(line: &str) -> Result<Entry, String> {
-    let parts: Vec<&str> = line.splitn(2, '=').map(|s| s.trim()).collect();
-    if parts.len() != 2 {
-        return Err("Entry must have exactly two parts: time specs and description".to_string());
-    }
-    let left = parts[0];
-    let description = parts[1].to_string();
-    let time_specs: Vec<&str> = left.split(',').map(|s| s.trim()).collect();
-    if time_specs.is_empty() {
-        return Err("No time specifications provided".to_string());
-    }
-    let mut total_hours = 0.0;
-    for time_spec in time_specs {
-        let hours = parse_time_spec(time_spec)?;
-        if hours < 0.0 {
-            return Err("Negative hours are invalid".to_string());
-        }
-        total_hours += hours;
-    }
-    Ok(Entry {
-        hours: total_hours,
-        description,
-    })
 }
