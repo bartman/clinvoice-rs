@@ -15,10 +15,12 @@ impl Config {
         Ok(Config { value })
     }
 
+    #[allow(dead_code)]
     pub fn has(&self, key: &str) -> bool {
         self.get_value(key).is_some()
     }
 
+    #[allow(dead_code)]
     pub fn kind(&self, key: &str) -> Option<&'static str> {
         self.get_value(key).map(|v| match v {
             Value::String(_) => "string",
@@ -31,10 +33,12 @@ impl Config {
         })
     }
 
+    #[allow(dead_code)]
     pub fn get(&self, key: &str) -> Option<&Value> {
         self.get_value(key)
     }
 
+    #[allow(dead_code)]
     pub fn get_with_default<T>(&self, key: &str, default: T) -> T
     where
         T: FromValue,
@@ -44,6 +48,7 @@ impl Config {
             .unwrap_or(default)
     }
 
+    #[allow(dead_code)]
     fn get_value(&self, key: &str) -> Option<&Value> {
         let mut current = &self.value;
         for part in key.split('.') {

@@ -10,7 +10,6 @@ use atty;
 pub fn run(
     format: LogFormat,
     directory: &Option<String>,
-    _config: &Option<String>,
     color: &ColorOption,
     dates: &[String],
 ) {

@@ -67,7 +67,7 @@ fn main() {
             Cli::command().print_long_help().unwrap();
         }
         Some(Command::Log { format, dates }) => {
-            log::run(format, &cli.directory, &cli.config, &cli.color, &dates)
+            log::run(format, &cli.directory, &cli.color, &dates)
         },
         Some(Command::Generate { output, r#type, sequence }) => {
             generate::run(output, r#type, sequence, &cli.directory, &cli.config, &cli.color)
