@@ -1,11 +1,10 @@
-use crate::OutputType;
 use crate::ColorOption;
 use crate::config::Config;
 
 pub fn run(
     output: String,
-    r#type: OutputType,
-    sequence: u32,
+    generator: &Option<String>,
+    sequence: &Option<u32>,
     directory: &Option<String>,
     config_file: &Option<String>,
     _color: &ColorOption
@@ -16,8 +15,10 @@ pub fn run(
     ).expect("Failed to load config");
 
     println!(
-        "Generate command with output: {}, type: {:?}, sequence: {}",
-        output, r#type, sequence
+        "Generate command with output: {}, generator: {:?}, sequence: {}",
+        output,
+        generator.as_ref().expect("generator not specified"),
+        sequence.as_ref().expect("sequence not specified")
     );
     // Add implementation here
 }

@@ -34,9 +34,9 @@ enum Command {
         #[clap(short, long)]
         output: String,
         #[clap(short, long)]
-        r#type: OutputType,
+        generator: Option<String>,
         #[clap(short, long)]
-        sequence: u32,
+        sequence: Option<u32>,
     },
 }
 
@@ -46,12 +46,6 @@ pub enum LogFormat {
     Day,
     Month,
     Year,
-}
-
-#[derive(ValueEnum, Clone, Debug)]
-pub enum OutputType {
-    Pdf,
-    Txt,
 }
 
 mod parse;
@@ -69,8 +63,8 @@ fn main() {
         Some(Command::Log { format, dates }) => {
             log::run(format, &cli.directory, &cli.color, &dates)
         },
-        Some(Command::Generate { output, r#type, sequence }) => {
-            generate::run(output, r#type, sequence, &cli.directory, &cli.config, &cli.color)
+        Some(Command::Generate { output, generator, sequence }) => {
+            generate::run(output, &generator, &sequence, &cli.directory, &cli.config, &cli.color)
         }
     }
 }
