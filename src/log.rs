@@ -89,30 +89,39 @@ pub fn run(
         }
         Format::Month => {
             let mut monthly_totals: HashMap<(i32, u32), f32> = HashMap::new();
+            let mut monthly_counts: HashMap<(i32, u32), u64> = HashMap::new();
             for (date, entries) in &time_data.entries {
                 let year = date.year();
                 let month = date.month();
+                let day = date.day();
                 let total: f32 = entries.iter().map(|e| e.hours).sum();
                 *monthly_totals.entry((year, month)).or_insert(0.0) += total;
+                *monthly_counts.entry((year, month)).or_insert(0) |= 1u64 << day;
                 grand_total = grand_total + total;
             }
+
             let mut months: Vec<_> = monthly_totals.keys().collect();
             months.sort();
             for (year, month) in months {
                 let total_hours = monthly_totals[&(*year, *month)];
+                let day_mask = monthly_counts[&(*year, *month)];
+                let day_count = day_mask.count_ones();
                 let date_str = format!("{:04}.{:02}", year, month);
                 let hours_str = format!("{:8.2}", total_hours);
+                let count_str = format!("{} day{}", day_count, match day_count { 1 => "", _ => "s" });
                 if use_color_stdout {
                     println!(
-                        "{}  {}",
+                        "{}  {}  ({})",
                         date_str.blue().bold(),
-                        hours_str.green().bold()
+                        hours_str.green().bold(),
+                        count_str.yellow().bold()
                     );
                 } else {
                     println!(
-                        "{}  {}",
+                        "{}  {}  ({})",
                         date_str,
-                        hours_str
+                        hours_str,
+                        count_str
                     );
                 }
             }
@@ -120,29 +129,46 @@ pub fn run(
         }
         Format::Year => {
             let mut yearly_totals: HashMap<i32, f32> = HashMap::new();
+            let mut monthly_counts: HashMap<(i32, u32), u64> = HashMap::new();
             for (date, entries) in &time_data.entries {
                 let year = date.year();
+                let month = date.month();
+                let day = date.day();
                 let total: f32 = entries.iter().map(|e| e.hours).sum();
                 *yearly_totals.entry(year).or_insert(0.0) += total;
+                *monthly_counts.entry((year, month)).or_insert(0) |= 1u64 << day;
                 grand_total = grand_total + total;
             }
+
+            let mut yearly_counts: HashMap<i32, u32> = HashMap::new();
+            let months: Vec<_> = monthly_counts.keys().collect();
+            for (year, month) in months {
+                let day_mask = monthly_counts[&(*year, *month)];
+                let day_count = day_mask.count_ones();
+                *yearly_counts.entry(*year).or_insert(0) += day_count;
+            }
+
             let mut years: Vec<_> = yearly_totals.keys().collect();
             years.sort();
             for year in years {
                 let total_hours = yearly_totals[year];
+                let day_count = yearly_counts[year];
                 let year_str = format!("{:04}", year);
                 let hours_str = format!("{:8.2}", total_hours);
+                let count_str = format!("{} day{}", day_count, match day_count { 1 => "", _ => "s" });
                 if use_color_stdout {
                     println!(
-                        "{}  {}",
+                        "{}  {}  ({})",
                         year_str.blue().bold(),
-                        hours_str.green().bold()
+                        hours_str.green().bold(),
+                        count_str.yellow().bold()
                     );
                 } else {
                     println!(
-                        "{}  {}",
+                        "{}  {}  ({})",
                         year_str,
-                        hours_str
+                        hours_str,
+                        count_str
                     );
                 }
             }
