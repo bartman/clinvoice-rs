@@ -28,6 +28,8 @@ pub fn run(
 
     let time_data = TimeData::new(dir_path, None, None, use_color_stderr).expect("Failed to load data");
 
+    let mut grand_total: f32 = 0.0;
+    let grand_total_indent;
     match format {
         Format::Full => {
             let mut dates: Vec<_> = time_data.entries.keys().collect();
@@ -35,7 +37,7 @@ pub fn run(
             for date in dates {
                 for entry in &time_data.entries[date] {
                     let date_str = format!("{:04}.{:02}.{:02}", date.year(), date.month(), date.day());
-                    let hours_str = format!("{:4}", entry.hours);
+                    let hours_str = format!("{:8.2}", entry.hours);
                     if use_color_stdout {
                         println!(
                             "{}  {}  {}",
@@ -51,8 +53,10 @@ pub fn run(
                             entry.description
                         );
                     }
+                    grand_total = grand_total + entry.hours;
                 }
             }
+            grand_total_indent = 12;
         }
         Format::Day => {
             let mut dates: Vec<_> = time_data.entries.keys().collect();
@@ -63,7 +67,7 @@ pub fn run(
                 let descriptions: Vec<_> = entries.iter().map(|e| e.description.as_str()).collect();
                 let desc_str = descriptions.join("; ");
                 let date_str = format!("{:04}.{:02}.{:02}", date.year(), date.month(), date.day());
-                let hours_str = format!("{:4}", total_hours);
+                let hours_str = format!("{:8.2}", total_hours);
                 if use_color_stdout {
                     println!(
                         "{}  {}  {}",
@@ -79,7 +83,9 @@ pub fn run(
                         desc_str
                     );
                 }
+                grand_total = grand_total + total_hours;
             }
+            grand_total_indent = 12;
         }
         Format::Month => {
             let mut monthly_totals: HashMap<(i32, u32), f32> = HashMap::new();
@@ -88,26 +94,29 @@ pub fn run(
                 let month = date.month();
                 let total: f32 = entries.iter().map(|e| e.hours).sum();
                 *monthly_totals.entry((year, month)).or_insert(0.0) += total;
+                grand_total = grand_total + total;
             }
             let mut months: Vec<_> = monthly_totals.keys().collect();
             months.sort();
             for (year, month) in months {
-                let total = monthly_totals[&(*year, *month)];
+                let total_hours = monthly_totals[&(*year, *month)];
                 let date_str = format!("{:04}.{:02}", year, month);
+                let hours_str = format!("{:8.2}", total_hours);
                 if use_color_stdout {
                     println!(
                         "{}  {}",
                         date_str.blue().bold(),
-                        total
+                        hours_str.green().bold()
                     );
                 } else {
                     println!(
                         "{}  {}",
                         date_str,
-                        total
+                        hours_str
                     );
                 }
             }
+            grand_total_indent = 9;
         }
         Format::Year => {
             let mut yearly_totals: HashMap<i32, f32> = HashMap::new();
@@ -115,26 +124,35 @@ pub fn run(
                 let year = date.year();
                 let total: f32 = entries.iter().map(|e| e.hours).sum();
                 *yearly_totals.entry(year).or_insert(0.0) += total;
+                grand_total = grand_total + total;
             }
             let mut years: Vec<_> = yearly_totals.keys().collect();
             years.sort();
             for year in years {
-                let total = yearly_totals[year];
+                let total_hours = yearly_totals[year];
                 let year_str = format!("{:04}", year);
+                let hours_str = format!("{:8.2}", total_hours);
                 if use_color_stdout {
                     println!(
                         "{}  {}",
                         year_str.blue().bold(),
-                        total
+                        hours_str.green().bold()
                     );
                 } else {
                     println!(
                         "{}  {}",
                         year_str,
-                        total
+                        hours_str
                     );
                 }
             }
+            grand_total_indent = 6;
         }
+    }
+    let grand_total_str = format!("{:8.2}", grand_total);
+    if use_color_stdout {
+        println!("{:<width$}{}", "Total:".red().bold(), grand_total_str.green().bold(), width = grand_total_indent);
+    } else {
+        println!("{:<width$}{}", "Total:", grand_total_str, width = grand_total_indent);
     }
 }
