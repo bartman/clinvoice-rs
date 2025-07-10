@@ -58,6 +58,7 @@ mod parse;
 mod data;
 mod log;
 mod generate;
+mod config;
 
 fn main() {
     let cli = Cli::parse();
