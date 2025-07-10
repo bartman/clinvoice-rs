@@ -1,6 +1,6 @@
 use crate::data::{TimeData, DateSelector};
 use crate::parse::{parse_date_arg};
-use crate::Format;
+use crate::LogFormat;
 use crate::ColorOption;
 use chrono::Datelike;
 use std::collections::HashMap;
@@ -8,7 +8,7 @@ use colored::*;
 use atty;
 
 pub fn run(
-    format: Format,
+    format: LogFormat,
     directory: &Option<String>,
     _config: &Option<String>,
     color: &ColorOption,
@@ -44,7 +44,7 @@ pub fn run(
     let mut grand_total: f32 = 0.0;
     let grand_total_indent;
     match format {
-        Format::Full => {
+        LogFormat::Full => {
             let mut dates: Vec<_> = time_data.entries.keys().collect();
             dates.sort();
             for date in dates {
@@ -71,7 +71,7 @@ pub fn run(
             }
             grand_total_indent = 12;
         }
-        Format::Day => {
+        LogFormat::Day => {
             let mut dates: Vec<_> = time_data.entries.keys().collect();
             dates.sort();
             for date in dates {
@@ -100,7 +100,7 @@ pub fn run(
             }
             grand_total_indent = 12;
         }
-        Format::Month => {
+        LogFormat::Month => {
             let mut monthly_totals: HashMap<(i32, u32), f32> = HashMap::new();
             let mut monthly_counts: HashMap<(i32, u32), u64> = HashMap::new();
             for (date, entries) in &time_data.entries {
@@ -140,7 +140,7 @@ pub fn run(
             }
             grand_total_indent = 9;
         }
-        Format::Year => {
+        LogFormat::Year => {
             let mut yearly_totals: HashMap<i32, f32> = HashMap::new();
             let mut monthly_counts: HashMap<(i32, u32), u64> = HashMap::new();
             for (date, entries) in &time_data.entries {
