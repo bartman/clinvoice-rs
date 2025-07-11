@@ -119,6 +119,8 @@ pub fn run(
         day_data.insert("index".to_string(), JsonValue::Number(serde_json::Number::from(index + 1)));
         day_data.insert("date".to_string(), JsonValue::String(date.format("%Y-%m-%d").to_string()));
         day_data.insert("hours".to_string(), JsonValue::Number(serde_json::Number::from_f64(total_hours as f64).unwrap()));
+        let descriptions: Vec<_> = entries.iter().map(|e| e.description.as_str()).collect();
+        day_data.insert("description".to_string(), JsonValue::String(descriptions.join("; ")));
         day_data.insert("cost".to_string(), JsonValue::Number(serde_json::Number::from_f64(cost).unwrap()));
         days.push(day_data);
     }
