@@ -32,11 +32,13 @@ enum Command {
     #[clap(about = "Generate an invoice")]
     Generate {
         #[clap(short, long)]
-        output: String,
+        output: Option<String>,
         #[clap(short, long)]
         generator: Option<String>,
         #[clap(short, long)]
         sequence: Option<u32>,
+        #[clap(value_parser)]
+        dates: Vec<String>,
     },
 }
 
@@ -63,8 +65,8 @@ fn main() {
         Some(Command::Log { format, dates }) => {
             log::run(format, &cli.directory, &cli.color, &dates)
         },
-        Some(Command::Generate { output, generator, sequence }) => {
-            generate::run(output, &generator, &sequence, &cli.directory, &cli.config, &cli.color)
+        Some(Command::Generate { output, generator, sequence, dates }) => {
+            generate::run(output, &generator, &sequence, &cli.directory, &cli.config, &cli.color, &dates)
         }
     }
 }

@@ -79,6 +79,32 @@ impl Config {
     }
 
     #[allow(dead_code)]
+    pub fn get_string(&self, key: &str) -> Option<String> {
+        self.get_value(key)
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string())
+    }
+
+    #[allow(dead_code)]
+    pub fn get_f64(&self, key: &str) -> Option<f64> {
+        self.get_value(key).and_then(|v| v.as_float())
+    }
+
+    #[allow(dead_code)]
+    pub fn get_i64(&self, key: &str) -> Option<i64> {
+        self.get_value(key).and_then(|v| v.as_integer())
+    }
+
+    #[allow(dead_code)]
+    pub fn get_table(&self, key: &str) -> Option<&toml::map::Map<String, Value>> {
+        self.get_value(key).and_then(|v| v.as_table())
+    }
+
+    pub fn as_table(&self) -> &toml::map::Map<String, Value> {
+        self.value.as_table().unwrap()
+    }
+
+    #[allow(dead_code)]
     fn get_value(&self, key: &str) -> Option<&Value> {
         let mut current = &self.value;
         for part in key.split('.') {
