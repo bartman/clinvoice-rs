@@ -14,6 +14,7 @@
 
 [contract]
     hourly-rate         = 50
+    payment-days        = 30
     # client will not pay for overtime, monthly hours are capped at 64 hours
     cap-hours-per-day   = 10
     cap-hours-per-month = 64

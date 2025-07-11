@@ -2,15 +2,25 @@ use crate::ColorOption;
 use crate::config::Config;
 use crate::data::{DateSelector, TimeData};
 use crate::parse::parse_date_arg;
-use chrono::Datelike;
+use chrono::{Datelike, Local, NaiveDate};
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
-use tera::{Context, Tera};
+use tera::{Context, Tera, to_value, try_get_value, Value};
 use toml::Value as TomlValue;
+
+fn date_filter(value: &Value, args: &HashMap<String, Value>) -> tera::Result<Value> {
+    let s = try_get_value!("date_filter", "value", String, value);
+    let format = match args.get("format") {
+        Some(val) => try_get_value!("date_filter", "format", String, val),
+        None => "%Y-%m-%d".to_string(),
+    };
+    let date = NaiveDate::parse_from_str(&s, "%Y-%m-%d").unwrap();
+    Ok(to_value(date.format(&format).to_string()).unwrap())
+}
 
 fn to_json(value: &TomlValue) -> JsonValue {
     match value {
@@ -85,6 +95,20 @@ pub fn run(
     let mut sorted_dates: Vec<_> = time_data.entries.keys().collect();
     sorted_dates.sort();
 
+    let now = Local::now();
+    let today = now.date_naive();
+    let invoice_date = today;
+    let due_date = today + chrono::Duration::days(config.get_i64("contract.payment-days").unwrap_or(30));
+    let period_start = sorted_dates.first().map(|d| *d).unwrap_or(&today);
+    let period_end = sorted_dates.last().map(|d| *d).unwrap_or(&today);
+
+    context.insert("now", &now.to_rfc3339());
+    context.insert("today", &today.format("%Y-%m-%d").to_string());
+    context.insert("invoice_date", &invoice_date.format("%Y-%m-%d").to_string());
+    context.insert("due_date", &due_date.format("%Y-%m-%d").to_string());
+    context.insert("period_start", &period_start.format("%Y-%m-%d").to_string());
+    context.insert("period_end", &period_end.format("%Y-%m-%d").to_string());
+
     for (index, date) in sorted_dates.iter().enumerate() {
         let entries = &time_data.entries[date];
         let total_hours: f32 = entries.iter().map(|e| e.hours).sum();
@@ -110,6 +134,7 @@ pub fn run(
     context.insert("total_amount", &total_amount);
 
     let mut tera = Tera::default();
+    tera.register_filter("date", date_filter);
     let template_content = fs::read_to_string(&template_path).expect("Unable to read template file");
     tera.add_raw_template("invoice", &template_content)
         .expect("Failed to add template");
