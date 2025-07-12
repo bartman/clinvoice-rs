@@ -5,14 +5,14 @@ stages:
 .deb12: &deb12
   image: debian:bookworm
   before_script:
-    - apt update
-    - apt install cargo
+    - apt update -qq
+    - apt install -y cargo
 
 .deb13: &deb13
   image: debian:trixie
   before_script:
-    - apt update
-    - apt install cargo
+    - apt update -qq
+    - apt install -y cargo
 
 build-deb12:
   <<: *deb12
