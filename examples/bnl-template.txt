@@ -18,11 +18,23 @@ Details:
 
 Prices calculated according to contract signed by the above parties.
 
-No. | Date       | Description | Hours | Cost
---- | ---        | ---         | ---   | ---
-{% for day in days %}{{ day.index }} | {{ day.date | date(format="%Y-%m-%d") }} | {{ day.description }} | {{ day.hours }} | {{ day.cost | round(precision=2) }}
+No. | Date       | Description                                                  | Hours | Cost
+--- | ---------- | ------------------------------------------------------------ | ----- | -------
+{% for day in days %}{{
+    day.index | left(width=4)
+}}| {{
+    day.date | date(format="%Y-%m-%d")
+}} | {{
+    day.description | left(width=60)
+}} | {{
+    day.hours | right(width=5)
+}} | {{
+    day.cost | round(precision=2) | right(width=7)
+}}
 {% endfor %}
-Subtotal:  {{ subtotal_amount | round(precision=2) }}
+Subtotal:  {{
+    subtotal_amount | round(precision=2)
+}}
 {% if tax_name %}{{ tax_name }} ({{ tax_percent }}%): {{ tax_amount | round(precision=2) }}
 {% endif %}{% if contract_discounts %}{% for discount in contract_discounts %}{{ discount.text }}: ({{ discount.cost | round(precision=2) }})
 {% endfor %}{% endif %}Total:     {{ total_amount | round(precision=2) }}

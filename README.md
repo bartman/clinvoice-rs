@@ -87,3 +87,10 @@ These variables are available within the `{% for day in days %}` loop:
 *   `day.cost`: The cost for the day (hours * rate).
 *   `day.description`: A semicolon-separated list of descriptions for the day's entries.
 
+### Filters
+
+*   `date(format="%Y-%m-%d")`: Formats a date string using `strftime` syntax.
+*   `left(width)`: Left-justifies a string within the given width, truncating if necessary.
+*   `right(width)`: Right-justifies a string within the given width, truncating if necessary.
+*   `center(width)`: Centers a string within the given width, truncating if necessary.
+

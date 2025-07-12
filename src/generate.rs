@@ -30,6 +30,45 @@ fn date_filter(value: &Value, args: &HashMap<String, Value>) -> tera::Result<Val
     Ok(to_value(date.format(&format).to_string()).unwrap())
 }
 
+fn justify_string(value: &Value, args: &HashMap<String, Value>, alignment: &str) -> tera::Result<Value> {
+    let s = if value.is_string() {
+        value.as_str().unwrap().to_string()
+    } else {
+        value.to_string()
+    };
+    let width = try_get_value!("justify_string", "width", usize, args["width"]);
+
+    let mut result = s;
+    if result.len() > width {
+        result.truncate(width);
+    } else {
+        match alignment {
+            "left" => result = format!("{:<width$}", result, width = width),
+            "right" => result = format!("{:>width$}", result, width = width),
+            "center" => {
+                let padding = width - result.len();
+                let pad_left = padding / 2;
+                let pad_right = padding - pad_left;
+                result = format!("{: >pad_left$}{: <pad_right$}", result, "", pad_left = pad_left, pad_right = pad_right);
+            }
+            _ => (),
+        }
+    }
+    Ok(to_value(result).unwrap())
+}
+
+fn left_filter(value: &Value, args: &HashMap<String, Value>) -> tera::Result<Value> {
+    justify_string(value, args, "left")
+}
+
+fn right_filter(value: &Value, args: &HashMap<String, Value>) -> tera::Result<Value> {
+    justify_string(value, args, "right")
+}
+
+fn center_filter(value: &Value, args: &HashMap<String, Value>) -> tera::Result<Value> {
+    justify_string(value, args, "center")
+}
+
 pub fn run(
     output_option: Option<String>,
     generator_option: &Option<String>,
@@ -95,7 +134,7 @@ pub fn run(
     let flat_config_table = config.get_flattened_values("_");
     for (key, value) in flat_config_table.iter() {
         context.insert(key, value);
-        //println!("{:30}  =>  {}", key, *value);
+        println!("{:30}  =>  {}", key, *value);
     }
 
     let mut days = Vec::new();
@@ -125,6 +164,8 @@ pub fn run(
         let cost = total_hours as f64 * rate;
         subtotal_amount += cost;
 
+        println!("{} {} {}", date, total_hours, cost);
+
         let descriptions: Vec<_> = entries.iter().map(|e| e.description.as_str()).collect();
         days.push(Day {
             index: index + 1,
@@ -150,6 +191,10 @@ pub fn run(
 
     let mut tera = Tera::default();
     tera.register_filter("date", date_filter);
+    tera.register_filter("left", left_filter);
+    tera.register_filter("right", right_filter);
+    tera.register_filter("center", center_filter);
+
     let template_content = fs::read_to_string(&template_path).expect("Unable to read template file");
     tera.add_raw_template("invoice", &template_content)
         .expect("Failed to add template");
