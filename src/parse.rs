@@ -137,7 +137,6 @@ pub fn parse_entry(line: &str) -> Result<Entry, String> {
 mod tests {
     use super::*;
     use chrono::NaiveDate;
-    use crate::data::{DateRange, Entry};
 
     #[test]
     fn test_parse_date_valid_formats() {
