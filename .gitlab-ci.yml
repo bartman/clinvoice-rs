@@ -20,7 +20,7 @@ build-deb12:
   <<: *deb12
   stage: build
   script:
-    - cargo test --verbose
+    - cargo build --verbose
 
 unit-test-deb12:
   <<: *deb12
@@ -35,7 +35,7 @@ build-deb13:
   <<: *deb13
   stage: build
   script:
-    - cargo test --verbose
+    - cargo build --verbose
 
 unit-test-deb13:
   <<: *deb13
