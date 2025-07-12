@@ -23,6 +23,9 @@ build-deb12:
 unit-test-deb12:
   <<: *deb12
   stage: test
+  needs:
+    - job: build-deb12
+      artifacts: true
   script:
     - cargo test --verbose
 
@@ -35,6 +38,9 @@ build-deb13:
 unit-test-deb13:
   <<: *deb13
   stage: test
+  needs:
+    - job: build-deb13
+      artifacts: true
   script:
     - cargo test --verbose
 
