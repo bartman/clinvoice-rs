@@ -4,6 +4,8 @@
 
 `clinvoice-rs` is a command-line tool for generating invoices from timesheet data. It reads `.cli` files, which contain time entries, and uses a Tera template to generate an invoice. The tool is configured using a `clinvoice.toml` file, which allows you to specify your invoice template, tax rate, and other settings. This allows for a high degree of customization and automation in your invoicing workflow.
 
+This is an oxidized version of [clinvoice-zsh](https://github.com/bartman/clinvoice-zsh) that I was previously using for about 15 years to generate invoices from text timesheets.
+
 ## Timesheets
 
 Timesheet data is stored in `.cli` files. These files have a simple format, with each line representing either a date or a time entry. Here is an example:
@@ -15,6 +17,23 @@ Timesheet data is stored in `.cli` files. These files have a simple format, with
 2025.07.02
 9-12 = Project B
 13-17 = Project C
+```
+
+## Configuration
+
+It expected that you have a directory of `.cli` files for each client, along with a `clinvoice.toml` configuration file, and a template used to generate the output.
+
+An directory of example files is provided to illustrate the setup:
+
+```sh
+❯ lt examples
+ examples
+├──   2010-11.cli
+├──   2010-12.cli
+├──   2011-01.cli
+├──   bnl-template.tex
+├──   bnl-template.txt
+└──   clinvoice.toml
 ```
 
 ## Logs
@@ -61,6 +80,25 @@ Total: {{ total_amount }}
 
 This template will generate a simple LaTeX invoice with a table of time entries.
 
+The configuration can point to multiple generators, using multiple template
+files. One of the generators can be made default. If the configuration sets up
+a `build` command for this latex file, you have it automatically generate a PDF
+using `pdflatex`.
+
+For example:
+
+```toml
+[generator]
+    default     = "pdf"
+[generator.txt]
+    template    = "template.txt"
+    output      = "output-{{sequence}}.txt"
+[generator.pdf]
+    template    = "template.txt"
+    output      = "output-{{sequence}}.tex"
+    build       = "pdflatex {{output}}"
+```
+
 ## Variables
 
 The following variables are available in your templates:
@@ -93,5 +131,5 @@ These variables are available within the `{% for day in days %}` loop:
 *   `left(width=N)`: Left-justifies a string within the given width, truncating if necessary.
 *   `right(width=N)`: Right-justifies a string within the given width, truncating if necessary.
 *   `center(width=N)`: Centers a string within the given width, truncating if necessary.
-*   `decimal(precision)`: Formats a floating-point number to the specified number of decimal places, including trailing zeros.
+*   `decimal(precision=N)`: Formats a floating-point number to the specified number of decimal places, including trailing zeros.
 
