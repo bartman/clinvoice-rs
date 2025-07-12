@@ -13,7 +13,7 @@
     phone       = "201-555-0001"
 
 [contract]
-    hourly_rate         = 50
+    hourly_rate         = 50.0
     payment_days        = 30
     # client will not pay for overtime, monthly hours are capped at 64 hours
     cap_hours_per_day   = 10

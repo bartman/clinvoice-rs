@@ -69,6 +69,12 @@ fn center_filter(value: &Value, args: &HashMap<String, Value>) -> tera::Result<V
     justify_string(value, args, "center")
 }
 
+fn decimal_filter(value: &Value, args: &HashMap<String, Value>) -> tera::Result<Value> {
+    let num = try_get_value!("decimal_filter", "value", f64, value);
+    let precision = try_get_value!("decimal_filter", "precision", usize, args["precision"]);
+    Ok(to_value(format!("{:.precision$}", num, precision = precision)).unwrap())
+}
+
 pub fn run(
     output_option: Option<String>,
     generator_option: &Option<String>,
@@ -134,7 +140,7 @@ pub fn run(
     let flat_config_table = config.get_flattened_values("_");
     for (key, value) in flat_config_table.iter() {
         context.insert(key, value);
-        println!("{:30}  =>  {}", key, *value);
+        //println!("{:30}  =>  {}", key, *value);
     }
 
     let mut days = Vec::new();
@@ -147,7 +153,7 @@ pub fn run(
     let now = Local::now();
     let today = now.date_naive();
     let invoice_date = today;
-    let due_date = today + chrono::Duration::days(config.get_i64("contract.payment-days").unwrap_or(30));
+    let due_date = today + chrono::Duration::days(config.get_i64("contract.payment_days").unwrap_or(30));
     let period_start = sorted_dates.first().map(|d| *d).unwrap_or(&today);
     let period_end = sorted_dates.last().map(|d| *d).unwrap_or(&today);
 
@@ -164,7 +170,7 @@ pub fn run(
         let cost = total_hours as f64 * rate;
         subtotal_amount += cost;
 
-        println!("{} {} {}", date, total_hours, cost);
+        //println!("{} {} {}", date, total_hours, cost);
 
         let descriptions: Vec<_> = entries.iter().map(|e| e.description.as_str()).collect();
         days.push(Day {
@@ -179,8 +185,8 @@ pub fn run(
     context.insert("days", &days);
     context.insert("subtotal_amount", &subtotal_amount);
 
-    let tax_percent = config.get_f64("tax_percent").unwrap_or(0.0);
-    let tax_amount = subtotal_amount * tax_percent;
+    let tax_percent = config.get_f64("tax.percent").unwrap_or(0.0);
+    let tax_amount = subtotal_amount * tax_percent / 100.0;
     let total_amount = subtotal_amount + tax_amount;
 
     context.insert("tax_amount", &tax_amount);
@@ -194,6 +200,7 @@ pub fn run(
     tera.register_filter("left", left_filter);
     tera.register_filter("right", right_filter);
     tera.register_filter("center", center_filter);
+    tera.register_filter("decimal", decimal_filter);
 
     let template_content = fs::read_to_string(&template_path).expect("Unable to read template file");
     tera.add_raw_template("invoice", &template_content)

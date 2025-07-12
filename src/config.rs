@@ -88,7 +88,15 @@ impl Config {
 
     #[allow(dead_code)]
     pub fn get_f64(&self, key: &str) -> Option<f64> {
-        self.get_value(key).and_then(|v| v.as_float())
+        self.get_value(key).and_then(|v| {
+            if let Some(f) = v.as_float() {
+                Some(f)
+            } else if let Some(i) = v.as_integer() {
+                Some(i as f64)
+            } else {
+                None
+            }
+        })
     }
 
     #[allow(dead_code)]

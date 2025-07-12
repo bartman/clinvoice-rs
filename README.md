@@ -90,7 +90,8 @@ These variables are available within the `{% for day in days %}` loop:
 ### Filters
 
 *   `date(format="%Y-%m-%d")`: Formats a date string using `strftime` syntax.
-*   `left(width)`: Left-justifies a string within the given width, truncating if necessary.
-*   `right(width)`: Right-justifies a string within the given width, truncating if necessary.
-*   `center(width)`: Centers a string within the given width, truncating if necessary.
+*   `left(width=N)`: Left-justifies a string within the given width, truncating if necessary.
+*   `right(width=N)`: Right-justifies a string within the given width, truncating if necessary.
+*   `center(width=N)`: Centers a string within the given width, truncating if necessary.
+*   `decimal(precision)`: Formats a floating-point number to the specified number of decimal places, including trailing zeros.
 

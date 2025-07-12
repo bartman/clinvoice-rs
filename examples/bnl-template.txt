@@ -15,6 +15,7 @@ Details:
     Invoice ending date: {{ period_end | date(format="%B %e, %Y") }}
     Invoice number:      {% if client_short_name %}{{ client_short_name }}-{% endif %}{{ sequence }}
     Invoice date:        {{ today | date(format="%B %e, %Y") }}
+    Payment due:         {{ due_date | date(format="%B %e, %Y") }}
 
 Prices calculated according to contract signed by the above parties.
 
@@ -29,15 +30,15 @@ No. | Date       | Description                                                  
 }} | {{
     day.hours | right(width=5)
 }} | {{
-    day.cost | round(precision=2) | right(width=7)
+    day.cost | decimal(precision=2) | right(width=7)
 }}
 {% endfor %}
 Subtotal:  {{
-    subtotal_amount | round(precision=2)
+    subtotal_amount | decimal(precision=2) | right(width=9)
 }}
-{% if tax_name %}{{ tax_name }} ({{ tax_percent }}%): {{ tax_amount | round(precision=2) }}
-{% endif %}{% if contract_discounts %}{% for discount in contract_discounts %}{{ discount.text }}: ({{ discount.cost | round(precision=2) }})
-{% endfor %}{% endif %}Total:     {{ total_amount | round(precision=2) }}
+{% if tax_name %}{{ tax_name }} ({{ tax_percent }}%): {{ tax_amount | decimal(precision=2) | right(width=9) }}
+{% endif %}{% if contract_discounts %}{% for discount in contract_discounts %}{{ discount.text }}: ({{ discount.cost | decimal(precision=2) }})
+{% endfor %}{% endif %}Total:     {{ total_amount | decimal(precision=2) | right(width=9) }}
 
 Notes:
 - Please make cheque payable to {{ issuer_company }}
