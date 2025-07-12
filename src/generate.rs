@@ -235,9 +235,12 @@ pub fn run(
 
     let rendered = tera.render("invoice", &context).expect("Failed to render template");
 
-    println!("Generating {}", output_path);
-
-    let mut file = File::create(output_path).expect("Failed to create output file");
-    file.write_all(rendered.as_bytes())
-        .expect("Failed to write to output file");
+    if output_path == "-" {
+        println!("{}", rendered);
+    } else {
+        println!("Generating {}", output_path);
+        let mut file = File::create(output_path).expect("Failed to create output file");
+        file.write_all(rendered.as_bytes())
+            .expect("Failed to write to output file");
+    }
 }
