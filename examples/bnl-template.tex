@@ -17,17 +17,17 @@
 
 \subsection*{From}
 \begin{tabular}{l}
-{% if issuer_company %}{{ issuer_company }} \{% endif %}
-{% if issuer_address %}{{ issuer_address }} \{% endif %}
-{% if issuer_phone %}{{ issuer_phone }} \{% endif %}
+{% if issuer_company %}{{ issuer_company }} \\{% endif %}
+{% if issuer_address %}{{ issuer_address }} \\{% endif %}
+{% if issuer_phone %}{{ issuer_phone }} \\{% endif %}
 \end{tabular}
 
 \subsection*{To}
 \begin{tabular}{l}
-{% if client_company %}{{ client_company }} \{% endif %}
-{% if client_care_of %}c/o {{ client_care_of }} \{% endif %}
-{% if client_address %}{{ client_address }} \{% endif %}
-{% if client_phone %}{{ client_phone }} \{% endif %}
+{% if client.company %}{{ client.company }} \\{% endif %}
+{% if client.care_of %}c/o {{ client.care_of }} \\{% endif %}
+{% if client.address %}{{ client.address }} \\{% endif %}
+{% if client.phone %}{{ client.phone }} \\{% endif %}
 \end{tabular}
 
 \subsection*{Details}
@@ -35,7 +35,9 @@
 \begin{center}
 \begin{tabular}{l l l}
         \textbf{Invoice ending date} & \textbf{Invoice number} & \textbf{Invoice date} \\
-        {{ period_end | date(format="%B %e, %Y") }} &         {% if client_short_name %}{{ client_short_name }}-{% endif %}{{ sequence }} &         {{ today | date(format="%B %e, %Y") }} \\
+        {{ period_end | date(format="%B %e, %Y") }} & \
+        {% if client.short_name %}{{ client.short_name }}-{% endif %}{{ sequence }} & \
+        {{ today | date(format="%B %e, %Y") }} \\
 \end{tabular}
 \end{center}
 
@@ -53,25 +55,26 @@ Prices calculated according to contract signed by the above parties.
 {% for day in days %}
         {{ day.index }} & {{ day.date | date(format="%Y-%m-%d") }} & {{ day.description }} & {{ day.hours }} & {{ day.cost | round(precision=2) }} \\
 {% endfor %}\hline
-\multicolumn{4}{r}{ \textbf{Subtotal} } & {{ subtotal_amount | round(precision=2) }} \
-{% if tax_name %}
-        & & {{ tax_name }} & {{ tax_rate * 100 }}% & {{ tax_amount | round(precision=2) }} \
+\multicolumn{4}{r}{ \textbf{Subtotal} } & {{ subtotal_amount | round(precision=2) }} \\
+{% if tax %}
+        & & {{ tax_name }} & {{ tax_percent }}% & {{ tax_amount | round(precision=2) }} \\
 {% endif %}
-{% if contract_discounts %}
-{% for discount in contract_discounts %}
-        & & {{ discount.text }} & & ({{ discount.cost | round(precision=2) }}) \
+{% if contract.discounts %}
+{% for discount in contract.discounts %}
+        & & {{ discount.text }} & & ({{ discount.cost | round(precision=2) }}) \\
 {% endfor %}
 {% endif %}\hline
-
 \multicolumn{4}{r}{ \textbf{Total} } & {{ total_amount | round(precision=2) }} \\
 \end{tabular}
 \end{center}
 
 \subsection*{Notes}
 \begin{itemize}
-        \item Please make cheque payable to {{ issuer_company }}{% if contract_notes %}{% for note in contract_notes %}
+        \item Please make cheque payable to {{ issuer_company }}{% if contract.notes %}{% for note in contract.notes %}
         \item {{ note }}
 {% endfor %}{% endif %}
 \end{itemize}
 
 \end{document}
+
+

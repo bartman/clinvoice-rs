@@ -32,12 +32,7 @@
     template    = "bnl-template.tex"
     # some output formats require special escaping
     escape      = "latex"
-    # output to generate, witht he following substitutions:
-    #   %% - a literal %
-    #   %# - sequence number
-    #   %Y - year
-    #   %m - last month in invoice
-    #   %d - last day in invoice
+    # output to generate, with the same substitutions as the template
     output      = 'bnl-{{ period_end | date(format="%Y%m%d") }}-{{ sequence }}.tex'
 
 [generator.txt]

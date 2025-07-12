@@ -10,6 +10,40 @@ use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 use tera::{Context, Tera, to_value, try_get_value, Value};
+use crate::latex::latex_escape;
+
+pub struct TeraContextBuilder {
+    data: HashMap<String, Value>,
+}
+
+impl TeraContextBuilder {
+    pub fn new() -> Self {
+        TeraContextBuilder {
+            data: HashMap::new(),
+        }
+    }
+
+    pub fn insert<T: Serialize + ?Sized>(&mut self, key: &str, value: &T) {
+        self.data.insert(key.to_string(), to_value(value).unwrap());
+    }
+
+    pub fn build(&self, escape_mode: &str) -> Context {
+        let mut context = Context::new();
+        for (key, value) in &self.data {
+            if escape_mode == "latex" {
+                if let Some(s) = value.as_str() {
+                    let e = latex_escape(s);
+                    context.insert(key.as_str(), &e);
+                } else {
+                    context.insert(key.as_str(), value);
+                }
+            } else {
+                context.insert(key.as_str(), value);
+            }
+        }
+        context
+    }
+}
 
 #[derive(Serialize)]
 struct Day {
@@ -123,23 +157,26 @@ pub fn run(
     let dir_path = directory.as_ref().expect("Directory path is required");
     let time_data = TimeData::new(dir_path, &selector, false).expect("Failed to load data");
 
-    let mut context = Context::new();
+    let escape_mode = config.get_string(&format!("{}.escape", generator_prefix)).unwrap_or("none".to_string());
+    println!("Escape mode {}", escape_mode);
+    let mut context_builder = TeraContextBuilder::new();
+
     let flat_config_table = config.get_flattened_values("_");
     for (key, value) in flat_config_table.iter() {
-        context.insert(key, value);
+        context_builder.insert(key, value);
     }
-    context.insert("sequence", &use_sequence);
+    context_builder.insert("sequence", &use_sequence);
 
     let sequence = if let Some(selected) = sequence_option {
         *selected
     } else {
         0
     };
-    context.insert("sequence", &sequence);
+    context_builder.insert("sequence", &sequence);
 
     let flat_config_table = config.get_flattened_values("_");
     for (key, value) in flat_config_table.iter() {
-        context.insert(key, value);
+        context_builder.insert(key, value);
         //println!("{:30}  =>  {}", key, *value);
     }
 
@@ -157,12 +194,12 @@ pub fn run(
     let period_start = sorted_dates.first().map(|d| *d).unwrap_or(&today);
     let period_end = sorted_dates.last().map(|d| *d).unwrap_or(&today);
 
-    context.insert("now", &now.to_rfc3339());
-    context.insert("today", &today.format("%Y-%m-%d").to_string());
-    context.insert("invoice_date", &invoice_date.format("%Y-%m-%d").to_string());
-    context.insert("due_date", &due_date.format("%Y-%m-%d").to_string());
-    context.insert("period_start", &period_start.format("%Y-%m-%d").to_string());
-    context.insert("period_end", &period_end.format("%Y-%m-%d").to_string());
+    context_builder.insert("now", &now.to_rfc3339());
+    context_builder.insert("today", &today.format("%Y-%m-%d").to_string());
+    context_builder.insert("invoice_date", &invoice_date.format("%Y-%m-%d").to_string());
+    context_builder.insert("due_date", &due_date.format("%Y-%m-%d").to_string());
+    context_builder.insert("period_start", &period_start.format("%Y-%m-%d").to_string());
+    context_builder.insert("period_end", &period_end.format("%Y-%m-%d").to_string());
 
     for (index, date) in sorted_dates.iter().enumerate() {
         let entries = &time_data.entries[date];
@@ -173,27 +210,31 @@ pub fn run(
         //println!("{} {} {}", date, total_hours, cost);
 
         let descriptions: Vec<_> = entries.iter().map(|e| e.description.as_str()).collect();
+        let mut description = descriptions.join("; ");
+        if escape_mode == "latex" {
+            description = latex_escape(&description);
+        }
+
         days.push(Day {
             index: index + 1,
             date: date.format("%Y-%m-%d").to_string(),
             hours: total_hours,
             cost,
-            description: descriptions.join("; "),
+            description: description,
         });
     }
 
-    context.insert("days", &days);
-    context.insert("subtotal_amount", &subtotal_amount);
+    context_builder.insert("subtotal_amount", &subtotal_amount);
 
     let tax_percent = config.get_f64("tax.percent").unwrap_or(0.0);
     let tax_amount = subtotal_amount * tax_percent / 100.0;
     let total_amount = subtotal_amount + tax_amount;
 
-    context.insert("tax_amount", &tax_amount);
-    context.insert("total_amount", &total_amount);
+    context_builder.insert("tax_amount", &tax_amount);
+    context_builder.insert("total_amount", &total_amount);
 
     let total_hours: f32 = time_data.entries.values().flat_map(|entries| entries.iter().map(|e| e.hours)).sum();
-    context.insert("total_hours", &total_hours);
+    context_builder.insert("total_hours", &total_hours);
 
     let mut tera = Tera::default();
     tera.register_filter("date", date_filter);
@@ -218,7 +259,7 @@ pub fn run(
                 .add_raw_template("output", &output_file_template_string)
                 .unwrap();
 
-            let rendered = output_file_tera.render("output", &context)
+            let rendered = output_file_tera.render("output", &context_builder.build("none"))
                 .expect("Failed to render filename");
 
             match directory {
@@ -233,7 +274,12 @@ pub fn run(
         }
     };
 
-    let rendered = tera.render("invoice", &context).expect("Failed to render template");
+    // days are not made available to the output_path Tera context,
+    // but must be available for the template processing.
+    context_builder.insert("days", &days);
+
+    let final_context = context_builder.build(&escape_mode);
+    let rendered = tera.render("invoice", &final_context).expect("Failed to render template");
 
     if output_path == "-" {
         println!("{}", rendered);
