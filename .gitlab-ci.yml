@@ -7,6 +7,8 @@ stages:
   before_script:
     - apt update -qq
     - apt install -y cargo
+  rules:
+    - when: never            # debian 12 rust is too old, don't care right now
 
 .deb13: &deb13
   image: debian:trixie
