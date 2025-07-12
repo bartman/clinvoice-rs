@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use toml::Value;
 use std::fs;
@@ -100,8 +101,34 @@ impl Config {
         self.get_value(key).and_then(|v| v.as_table())
     }
 
+    #[allow(dead_code)]
     pub fn as_table(&self) -> &toml::map::Map<String, Value> {
         self.value.as_table().unwrap()
+    }
+
+    #[allow(dead_code)]
+    pub fn get_flattened_values(&self) -> HashMap<String, Value> {
+        let mut map = HashMap::new();
+        if let Some(table) = self.value.as_table() {
+            self.flatten_table_recursive("", table, &mut map);
+        }
+        map
+    }
+
+    fn flatten_table_recursive(&self, prefix: &str, table: &toml::map::Map<String, Value>, map: &mut HashMap<String, Value>) {
+        for (key, value) in table {
+            let new_key = if prefix.is_empty() {
+                key.clone()
+            } else {
+                format!("{}.{}", prefix, key)
+            };
+
+            if let Some(sub_table) = value.as_table() {
+                self.flatten_table_recursive(&new_key, sub_table, map);
+            } else {
+                map.insert(new_key, value.clone());
+            }
+        }
     }
 
     #[allow(dead_code)]

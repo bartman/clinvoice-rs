@@ -3,14 +3,22 @@ use crate::config::Config;
 use crate::data::{DateSelector, TimeData};
 use crate::parse::parse_date_arg;
 use chrono::{Datelike, Local, NaiveDate};
-use serde_json::Value as JsonValue;
+use serde::Serialize;
 use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 use tera::{Context, Tera, to_value, try_get_value, Value};
-use toml::Value as TomlValue;
+
+#[derive(Serialize)]
+struct Day {
+    index: usize,
+    date: String,
+    hours: f32,
+    cost: f64,
+    description: String,
+}
 
 fn date_filter(value: &Value, args: &HashMap<String, Value>) -> tera::Result<Value> {
     let s = try_get_value!("date_filter", "value", String, value);
@@ -22,28 +30,10 @@ fn date_filter(value: &Value, args: &HashMap<String, Value>) -> tera::Result<Val
     Ok(to_value(date.format(&format).to_string()).unwrap())
 }
 
-fn to_json(value: &TomlValue) -> JsonValue {
-    match value {
-        TomlValue::String(s) => JsonValue::String(s.clone()),
-        TomlValue::Integer(i) => JsonValue::Number(serde_json::Number::from(*i)),
-        TomlValue::Float(f) => JsonValue::Number(serde_json::Number::from_f64(*f).unwrap()),
-        TomlValue::Boolean(b) => JsonValue::Bool(*b),
-        TomlValue::Array(arr) => JsonValue::Array(arr.iter().map(to_json).collect()),
-        TomlValue::Table(table) => {
-            let mut map = serde_json::Map::new();
-            for (k, v) in table {
-                map.insert(k.clone(), to_json(v));
-            }
-            JsonValue::Object(map)
-        }
-        TomlValue::Datetime(dt) => JsonValue::String(dt.to_string()),
-    }
-}
-
 pub fn run(
     output_option: Option<String>,
     generator_option: &Option<String>,
-    _sequence_option: &Option<u32>,
+    sequence_option: &Option<u32>,
     directory: &Option<String>,
     config_file: &Option<String>,
     _color: &ColorOption,
@@ -83,9 +73,17 @@ pub fn run(
     let time_data = TimeData::new(dir_path, &selector, false).expect("Failed to load data");
 
     let mut context = Context::new();
-    let config_table = config.as_table();
-    for (key, value) in config_table.iter() {
-        context.insert(key, &to_json(value));
+
+    let sequence = if let Some(selected) = sequence_option {
+        *selected
+    } else {
+        0
+    };
+    context.insert("sequence", &sequence);
+
+    let flat_config_table = config.get_flattened_values();
+    for (key, value) in flat_config_table.iter() {
+        context.insert(key, value);
     }
 
     let mut days = Vec::new();
@@ -115,14 +113,14 @@ pub fn run(
         let cost = total_hours as f64 * rate;
         subtotal_amount += cost;
 
-        let mut day_data = HashMap::new();
-        day_data.insert("index".to_string(), JsonValue::Number(serde_json::Number::from(index + 1)));
-        day_data.insert("date".to_string(), JsonValue::String(date.format("%Y-%m-%d").to_string()));
-        day_data.insert("hours".to_string(), JsonValue::Number(serde_json::Number::from_f64(total_hours as f64).unwrap()));
         let descriptions: Vec<_> = entries.iter().map(|e| e.description.as_str()).collect();
-        day_data.insert("description".to_string(), JsonValue::String(descriptions.join("; ")));
-        day_data.insert("cost".to_string(), JsonValue::Number(serde_json::Number::from_f64(cost).unwrap()));
-        days.push(day_data);
+        days.push(Day {
+            index: index + 1,
+            date: date.format("%Y-%m-%d").to_string(),
+            hours: total_hours,
+            cost,
+            description: descriptions.join("; "),
+        });
     }
 
     context.insert("days", &days);
@@ -134,6 +132,9 @@ pub fn run(
 
     context.insert("tax_amount", &tax_amount);
     context.insert("total_amount", &total_amount);
+
+    let total_hours: f32 = time_data.entries.values().flat_map(|entries| entries.iter().map(|e| e.hours)).sum();
+    context.insert("total_hours", &total_hours);
 
     let mut tera = Tera::default();
     tera.register_filter("date", date_filter);
