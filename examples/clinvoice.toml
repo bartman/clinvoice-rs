@@ -7,17 +7,17 @@
 # and the rest would live in this file (in the project dir)
 [client]
     short-name  = "BNL"
-    care-of     = "Shelby Forthright"
+    care_of     = "Shelby Forthright"
     company     = "Buy N Large"
     address     = "1 Buy n Large Plaza, BnL Ave. | Largefield, NJ, 08012 | USA"
     phone       = "201-555-0001"
 
 [contract]
-    hourly-rate         = 50
-    payment-days        = 30
+    hourly_rate         = 50
+    payment_days        = 30
     # client will not pay for overtime, monthly hours are capped at 64 hours
-    cap-hours-per-day   = 10
-    cap-hours-per-month = 64
+    cap_hours_per_day   = 10
+    cap_hours_per_month = 64
 
 [tax]
     name        = "VAT"

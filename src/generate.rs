@@ -100,7 +100,7 @@ pub fn run(
 
     let mut days = Vec::new();
     let mut subtotal_amount = 0.0;
-    let rate = config.get_f64("rate").unwrap_or(0.0);
+    let rate = config.get_f64("contract.hourly_rate").unwrap_or(0.0);
 
     let mut sorted_dates: Vec<_> = time_data.entries.keys().collect();
     sorted_dates.sort();

@@ -1,50 +1,36 @@
--------------------------------------------------------------------------
-                                 INVOICE
--------------------------------------------------------------------------
+INVOICE
 
 From:
-<cli>
-        conf_ifdef_printf issuer.company '\t%s\n'
-        conf_ifdef_printf issuer.address '\t%s\n'
-        conf_ifdef_printf issuer.phone   '\t%s\n'
-</cli>
-
+{% if issuer_company %}    {{ issuer_company }}
+{% endif %}{% if issuer_address %}    {{ issuer_address }}
+{% endif %}{% if issuer_phone %}    {{ issuer_phone }}
+{% endif %}
 To:
-<cli>
-        conf_ifdef_printf client.company '\t%s\n'
-        conf_ifdef_printf client.care-of '\tc/o %s\n'
-        conf_ifdef_printf client.address '\t%s\n'
-        conf_ifdef_printf client.phone   '\t%s\n'
-</cli>
+{% if client_company %}    {{ client_company }}
+{% endif %}{% if client_care_of %}    c/o {{ client_care_of }}
+{% endif %}{% if client_address %}    {{ client_address }}
+{% endif %}{% if client_phone %}    {{ client_phone }}
+{% endif %}
+Details:
+    Invoice ending date: {{ period_end | date(format="%B %e, %Y") }}
+    Invoice number:      {% if client_short_name %}{{ client_short_name }}-{% endif %}{{ sequence }}
+    Invoice date:        {{ today | date(format="%B %e, %Y") }}
 
-Invoice ending date: <cli> vars_print_date '%B %e, %Y' lastdate </cli>
-Invoice number:      <cli> vars_printf '%d' sequence </cli>
-Invoice date:        <cli> vars_print_date '%B %e, %Y' today </cli>
+Prices calculated according to contract signed by the above parties.
 
--------------------------------------------------------------------------
+No. | Date       | Description | Hours | Cost
+--- | ---        | ---         | ---   | ---
+{% for day in days %}{{ day.index }} | {{ day.date | date(format="%Y-%m-%d") }} | {{ day.description }} | {{ day.hours }} | {{ day.cost | round(precision=2) }}
+{% endfor %}
+Subtotal:  {{ subtotal_amount | round(precision=2) }}
+{% if tax_name %}{{ tax_name }} ({{ tax_percent }}%): {{ tax_amount | round(precision=2) }}
+{% endif %}{% if contract_discounts %}{% for discount in contract_discounts %}{{ discount.text }}: ({{ discount.cost | round(precision=2) }})
+{% endfor %}{% endif %}Total:     {{ total_amount | round(precision=2) }}
 
-Prices calculated according to contract signed by the above parties:
-
-No.  |  Date      |  Description                   | Hours   | Cost
------+------------+--------------------------------+---------+-----------
-<cli for_each_day>
-        vars_printf ' %-3s | %-10s | %-30s | %7g | %8.2f\n' number date text/30 dayhours daycost
-        vars_printf '-----+------------+--------------------------------+---------+-----------\n'
-</cli>                                          Subtotal | <cli>
-        vars_printf '%7.0f' totalhours
-                                                     </cli> | <cli>
-        vars_printf '%8.2f' subtotalcost
-</cli>
-                                                   +---------+-----------
-                                            TAX    | <cli>
-        vars_printf '%s %s%%' taxname taxpercent
-                                                      </cli> | <cli>
-        vars_printf '%8.2f' taxcost
-</cli><cli>
-        ifdef totaldiscount vars_printf '\n                                       Discount    |       - |(%8.2f)' totaldiscount 
-</cli>
-                                                   +---------+-----------
-                                                       Total | <cli>
-        vars_printf '%8.2f' totalcost
-</cli>
-
+Notes:
+- Please make cheque payable to {{ issuer_company }}
+{% if contract_notes %}
+{% for note in contract_notes %}
+- {{ note }}
+{% endfor %}
+{% endif %}
