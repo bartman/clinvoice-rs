@@ -26,14 +26,14 @@ unit-test-deb12:
   script:
     - cargo test --verbose
 
-build-deb12:
-  <<: *deb12
+build-deb13:
+  <<: *deb13
   stage: build
   script:
     - cargo test --verbose
 
-unit-test-deb12:
-  <<: *deb12
+unit-test-deb13:
+  <<: *deb13
   stage: test
   script:
     - cargo test --verbose
