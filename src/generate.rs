@@ -48,6 +48,12 @@ pub fn run(
         config.get_string("generator.default").expect("generator.default is not defined in config")
     };
 
+    let use_sequence:u32 = if let Some(selected) = sequence_option {
+        *selected
+    } else {
+        1
+    };
+
     let generator_prefix = format!("generator.{}", use_generator);
     let mut template_path = config
         .get_string(&format!("{}.template", generator_prefix))
@@ -73,6 +79,11 @@ pub fn run(
     let time_data = TimeData::new(dir_path, &selector, false).expect("Failed to load data");
 
     let mut context = Context::new();
+    let flat_config_table = config.get_flattened_values("_");
+    for (key, value) in flat_config_table.iter() {
+        context.insert(key, value);
+    }
+    context.insert("sequence", &use_sequence);
 
     let sequence = if let Some(selected) = sequence_option {
         *selected
@@ -81,9 +92,10 @@ pub fn run(
     };
     context.insert("sequence", &sequence);
 
-    let flat_config_table = config.get_flattened_values();
+    let flat_config_table = config.get_flattened_values("_");
     for (key, value) in flat_config_table.iter() {
         context.insert(key, value);
+        //println!("{:30}  =>  {}", key, *value);
     }
 
     let mut days = Vec::new();
@@ -126,8 +138,8 @@ pub fn run(
     context.insert("days", &days);
     context.insert("subtotal_amount", &subtotal_amount);
 
-    let tax_rate = config.get_f64("tax_rate").unwrap_or(0.0);
-    let tax_amount = subtotal_amount * tax_rate;
+    let tax_percent = config.get_f64("tax_percent").unwrap_or(0.0);
+    let tax_amount = subtotal_amount * tax_percent;
     let total_amount = subtotal_amount + tax_amount;
 
     context.insert("tax_amount", &tax_amount);
