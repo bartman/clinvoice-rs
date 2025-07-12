@@ -2,7 +2,7 @@ use crate::ColorOption;
 use crate::config::Config;
 use crate::data::{DateSelector, TimeData};
 use crate::parse::parse_date_arg;
-use chrono::{Datelike, Local, NaiveDate};
+use chrono::{Local, NaiveDate};
 use serde::Serialize;
 use std::collections::HashMap;
 use std::fs;
@@ -209,26 +209,33 @@ pub fn run(
     let output_path = match output_option {
         Some(path) => path,
         None => {
-            let output_template = config
+            let output_file_template_string = config
                 .get_string(&format!("{}.output", generator_prefix))
-                .expect("output not specified in config");
-            let mut output_tera = Tera::default();
-            output_tera
-                .add_raw_template("output_path", &output_template)
+                .expect("output not specified in config, use --output option.");
+
+            let mut output_file_tera = Tera::default();
+            output_file_tera
+                .add_raw_template("output", &output_file_template_string)
                 .unwrap();
-            if let Some(last_date) = sorted_dates.last() {
-                let mut output_context = Context::new();
-                output_context.insert("year", &last_date.year());
-                output_context.insert("month", &last_date.month());
-                output_context.insert("day", &last_date.day());
-                output_tera.render("output_path", &output_context).unwrap()
-            } else {
-                "invoice.out".to_string()
+
+            let rendered = output_file_tera.render("output", &context)
+                .expect("Failed to render filename");
+
+            match directory {
+                None => {
+                    rendered
+                },
+                Some(dir) => {
+                    let path = Path::new(dir).join(rendered.clone());
+                    path.to_str().unwrap().to_string()
+                },
             }
         }
     };
 
     let rendered = tera.render("invoice", &context).expect("Failed to render template");
+
+    println!("Generating {}", output_path);
 
     let mut file = File::create(output_path).expect("Failed to create output file");
     file.write_all(rendered.as_bytes())

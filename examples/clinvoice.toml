@@ -38,16 +38,16 @@
     #   %Y - year
     #   %m - last month in invoice
     #   %d - last day in invoice
-    output      = "bnl-%Y%m%d-%#.tex"
+    output      = 'bnl-{{ period_end | date(format="%Y%m%d") }}-{{ sequence }}.tex'
 
 [generator.txt]
     template    = "bnl-template.txt"
-    output      = "bnl-%Y%m%d-%#.txt"
+    output      = 'bnl-{{ period_end | date(format="%Y%m%d") }}-{{ sequence }}.txt'
 
 [generator.pdf]
     template    = "bnl-template.tex"
     escape      = "latex"
-    output      = "bnl-%Y%m%d-%#.tex"
+    output      = 'bnl-{{ period_end | date(format="%Y%m%d") }}-{{ sequence }}.tex'
     # rendering is done by calling this program, substituting %s for 'output' above
     build       = "pdflatex %s"
 
