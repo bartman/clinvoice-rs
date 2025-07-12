@@ -9,6 +9,7 @@ use std::fs;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
+use std::process::Command;
 use tera::{Context, Tera, to_value, try_get_value, Value};
 use crate::latex::latex_escape;
 
@@ -113,13 +114,14 @@ pub fn run(
     output_option: Option<String>,
     generator_option: &Option<String>,
     sequence_option: &Option<u32>,
-    directory: &Option<String>,
+    directory_option: &Option<String>,
     config_file: &Option<String>,
     _color: &ColorOption,
     dates: &[String],
 ) {
-    let config = Config::new(config_file.as_deref(), directory.as_deref())
+    let config = Config::new(config_file.as_deref(), directory_option.as_deref())
         .expect("Failed to load config");
+    let directory = directory_option.as_deref().unwrap_or(".");
 
     let use_generator = if let Some(selected) = generator_option {
         selected.clone()
@@ -137,11 +139,8 @@ pub fn run(
     let mut template_path = config
         .get_string(&format!("{}.template", generator_prefix))
         .expect("template not specified in config");
-
-    if let Some(dir) = directory {
-        let path = Path::new(dir).join(template_path.clone());
-        template_path = path.to_str().unwrap().to_string();
-    }
+    let path = Path::new(directory).join(template_path.clone());
+    template_path = path.to_str().unwrap().to_string();
 
     let mut selector = DateSelector::new();
     for date_arg in dates {
@@ -154,12 +153,13 @@ pub fn run(
         }
     }
 
-    let dir_path = directory.as_ref().expect("Directory path is required");
-    let time_data = TimeData::new(dir_path, &selector, false).expect("Failed to load data");
+    let time_data = TimeData::new(directory, &selector, false).expect("Failed to load data");
 
     let escape_mode = config.get_string(&format!("{}.escape", generator_prefix)).unwrap_or("none".to_string());
     println!("Escape mode {}", escape_mode);
     let mut context_builder = TeraContextBuilder::new();
+
+    context_builder.insert("directory", directory);
 
     let flat_config_table = config.get_flattened_values("_");
     for (key, value) in flat_config_table.iter() {
@@ -260,18 +260,29 @@ pub fn run(
                 .unwrap();
 
             let rendered = output_file_tera.render("output", &context_builder.build("none"))
-                .expect("Failed to render filename");
+                .expect("Failed to render output filename");
 
-            match directory {
-                None => {
-                    rendered
-                },
-                Some(dir) => {
-                    let path = Path::new(dir).join(rendered.clone());
-                    path.to_str().unwrap().to_string()
-                },
-            }
+            let path = Path::new(directory).join(rendered.clone());
+            path.to_str().unwrap().to_string()
         }
+    };
+
+    context_builder.insert("output", &output_path);
+
+    let build_command_template_string = config.get_string(&format!("{}.build", generator_prefix));
+    let build_command :Option<String> = match build_command_template_string {
+        None => None,
+        Some(cmd) => {
+            let mut build_cmd_tera = Tera::default();
+            build_cmd_tera
+                .add_raw_template("build_command", &cmd)
+                .unwrap();
+
+            let rendered = build_cmd_tera.render("build_command", &context_builder.build("none"))
+                .expect("Failed to render build command");
+
+            Some(rendered)
+        },
     };
 
     // days are not made available to the output_path Tera context,
@@ -288,5 +299,22 @@ pub fn run(
         let mut file = File::create(output_path).expect("Failed to create output file");
         file.write_all(rendered.as_bytes())
             .expect("Failed to write to output file");
+    }
+
+    if let Some(builder) = build_command {
+        println!("Build with {}", builder.to_string());
+
+        let status = Command::new("sh")
+            .arg("-c")
+            .arg(&builder)
+            .stdin(std::process::Stdio::null())
+            .status()
+            .expect("Failed to execute build command");
+
+        if !status.success() {
+            eprintln!("Build command failed with status: {:?}", status);
+            std::process::exit(1);
+        }
+
     }
 }

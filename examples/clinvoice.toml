@@ -43,6 +43,6 @@
     template    = "bnl-template.tex"
     escape      = "latex"
     output      = 'bnl-{{ period_end | date(format="%Y%m%d") }}-{{ sequence }}.tex'
-    # rendering is done by calling this program, substituting %s for 'output' above
-    build       = "pdflatex %s"
+    # rendering is done by calling this program
+    build       = "pdflatex {{ output }}"
 
