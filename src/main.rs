@@ -5,8 +5,10 @@ use crate::color::*;
 
 #[derive(Parser)]
 struct Cli {
-    #[clap(short = 'D', long, help = "select trace level (error, warn, [info], debug, trace)", default_value = "info")]
-    debug: TraceLevel,
+    #[clap(short = 'l', long, help = "select log level (error, warn, [info], debug, trace)", default_value = "info")]
+    log_level: TraceLevel,
+    #[clap(short = 'L', long, help = "select log destination file (- is stderr", default_value = "-")]
+    log_file: String,
     #[clap(short, long, help = "select directory with .cli files")]
     directory: Option<String>,
     #[clap(short, long, help = "select configuration file, use .clinvoice otherwise")]
@@ -59,7 +61,7 @@ mod parse;
 fn main() {
     let cli = Cli::parse();
     color::init(&cli.color);
-    logger::init(&cli.debug);
+    logger::init(&cli.log_level, &cli.log_file);
     match cli.command {
         None => {
             Cli::command().print_long_help().unwrap();

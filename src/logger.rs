@@ -1,5 +1,7 @@
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 use clap::{ValueEnum};
+use std::fs::File;
+use crate::color;
 
 #[derive(ValueEnum, Clone, Debug)]
 pub enum TraceLevel {
@@ -22,20 +24,28 @@ impl TraceLevel {
     }
 }
 
-pub fn init(trace_level : &TraceLevel) {
-    tracing_subscriber::registry()
-        .with(
-            fmt::layer()
-                .with_file(true)
-                .with_line_number(true)
-                .with_target(false)
-                .without_time()
-                .with_writer(std::io::stderr)
-        )
-        .with(
-            // Filter logs based on the RUST_LOG env var, or info level by default.
-            EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| EnvFilter::new(trace_level.as_str())),
-        )
-        .init();
+pub fn init(trace_level : &TraceLevel, trace_output : &String) {
+    let filter = EnvFilter::try_from_default_env()
+        .unwrap_or_else(|_| EnvFilter::new(trace_level.as_str()));
+
+    let fmt_layer = fmt::layer()
+        .with_file(true)
+        .with_line_number(true)
+        .with_target(false)
+        .without_time()
+        .with_ansi(color::color_enabled().stderr);
+
+    if trace_output == "-" {
+        tracing_subscriber::registry()
+            .with(fmt_layer.with_writer(std::io::stderr))
+            .with(filter)
+            .init();
+    } else {
+        let file = File::create(trace_output)
+            .unwrap_or_else(|e| panic!("failed to create trace output file '{}': {}", trace_output, e));
+        tracing_subscriber::registry()
+            .with(fmt_layer.with_writer(file))
+            .with(filter)
+            .init();
+    }
 }
