@@ -1,16 +1,18 @@
 use crate::config::Config;
 use crate::data::{DateSelector, TimeData};
+use crate::latex::latex_escape;
 use crate::parse::parse_date_arg;
+use crate::color::*;
 use chrono::{Local, NaiveDate};
+use colored::Color;
 use serde::Serialize;
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::fs;
 use std::fs::File;
-use std::io::Write;
+use std::io::{BufRead, BufReader, Write};
 use std::path::Path;
-use std::process::Command;
+use std::process::{Command, Stdio};
 use tera::{Context, Tera, to_value, try_get_value, Value};
-use crate::latex::latex_escape;
 
 pub struct TeraContextBuilder {
     data: HashMap<String, Value>,
@@ -301,19 +303,99 @@ pub fn run(
         .expect("Failed to write to output file");
 
     if let Some(builder) = build_command {
-        tracing::info!("Build with {}", builder.to_string());
-
-        let status = Command::new("sh")
-            .arg("-c")
-            .arg(&builder)
-            .stdin(std::process::Stdio::null())
-            .status()
-            .expect("Failed to execute build command");
-
-        if !status.success() {
-            tracing::error!("Build command failed with status: {:?}", status);
-            std::process::exit(1);
-        }
-
+        process_builder(builder);
     }
+}
+
+fn process_builder(builder : String) {
+    tracing::info!("Build with {}", builder.to_string());
+
+    let mut cmd = Command::new("sh")
+        .arg("-c")
+        .arg(&builder)
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("Failed to execute build command");
+
+    let stdout = cmd.stdout.take().unwrap();
+    let stderr = cmd.stderr.take().unwrap();
+
+    let (tx, rx) = std::sync::mpsc::channel();
+
+    let stdout_tx = tx.clone();
+    let stdout_thread = std::thread::spawn(move || {
+        let reader = BufReader::new(stdout);
+        for line in reader.lines() {
+            stdout_tx.send(line.unwrap()).unwrap();
+        }
+    });
+
+    let stderr_tx = tx.clone();
+    let stderr_thread = std::thread::spawn(move || {
+        let reader = BufReader::new(stderr);
+        for line in reader.lines() {
+            stderr_tx.send(line.unwrap()).unwrap();
+        }
+    });
+
+    drop(tx);
+
+    let mut show_output = false;
+    let success_show_lines = 2;
+    let negative_show_lines = 5;
+    let mut history: VecDeque<String> = VecDeque::with_capacity(negative_show_lines);
+    let mut full_output = Vec::new();
+
+    let negative_words = vec!["error", "fail", "fatal", "warn", "undefined", "missing"];
+
+    for line in rx {
+        full_output.push(line.clone());
+
+        let line_has_negative = negative_words.iter().any(|w| line.to_lowercase().contains(w));
+
+        if show_output {
+            if line_has_negative {
+                eprintln!("{}", line.colored(Color::BrightRed));
+            } else {
+                eprintln!("{}", line.colored(Color::BrightBlack));
+            }
+        } else {
+            if line_has_negative {
+                show_output = true;
+                for past_line in &history {
+                    eprintln!("{}", past_line.colored(Color::BrightBlack));
+                }
+                eprintln!("{}", line.colored(Color::BrightRed));
+            } else {
+                if history.len() == negative_show_lines {
+                    history.pop_front();
+                }
+                history.push_back(line);
+            }
+        }
+    }
+
+    stdout_thread.join().unwrap();
+    stderr_thread.join().unwrap();
+
+    let status = cmd.wait().expect("Failed to wait for build command");
+
+    if !status.success() {
+        if !show_output {
+            for line in full_output {
+                eprintln!("{}", line.colored(Color::BrightBlack));
+            }
+        }
+        tracing::error!("Build command failed with status: {:?}", status);
+        std::process::exit(1);
+    }
+
+    let start_line = full_output.len().saturating_sub(success_show_lines);
+    for line in &full_output[start_line..] {
+        eprintln!("{}", line.colored(Color::BrightBlack));
+    }
+
+    tracing::info!("Build command successful");
 }
