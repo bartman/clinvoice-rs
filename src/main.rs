@@ -1,5 +1,6 @@
 use clap::{Parser, Subcommand, ValueEnum};
 use clap::CommandFactory;
+use crate::logger::TraceLevel;
 
 #[derive(ValueEnum, Clone, Debug)]
 enum ColorOption {
@@ -10,6 +11,8 @@ enum ColorOption {
 
 #[derive(Parser)]
 struct Cli {
+    #[clap(short = 'D', long, help = "select trace level (error, warn, [info], debug, trace)", default_value = "info")]
+    debug: TraceLevel,
     #[clap(short, long, help = "select directory with .cli files")]
     directory: Option<String>,
     #[clap(short, long, help = "select configuration file, use .clinvoice otherwise")]
@@ -56,9 +59,11 @@ mod log;
 mod generate;
 mod config;
 mod latex;
+mod logger;
 
 fn main() {
     let cli = Cli::parse();
+    logger::init(&cli.debug);
     match cli.command {
         None => {
             Cli::command().print_long_help().unwrap();

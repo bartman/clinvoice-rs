@@ -9,11 +9,11 @@ use atty;
 
 pub fn run(
     format: LogFormat,
-    directory: &Option<String>,
+    directory_option: &Option<String>,
     color: &ColorOption,
     dates: &[String],
 ) {
-    let dir_path = directory.as_ref().expect("Directory path is required");
+    let directory = directory_option.as_deref().unwrap_or(".");
 
     let use_color_stdout = match color {
         ColorOption::Always => true,
@@ -38,7 +38,7 @@ pub fn run(
         }
     }
 
-    let time_data = TimeData::new(dir_path, &selector, use_color_stderr).expect("Failed to load data");
+    let time_data = TimeData::new(directory, &selector, use_color_stderr).expect("Failed to load data");
 
     let mut grand_total: f32 = 0.0;
     let grand_total_indent;
