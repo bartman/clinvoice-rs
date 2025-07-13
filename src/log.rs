@@ -18,7 +18,7 @@ pub fn run(
         match parse_date_arg(date_arg) {
             Ok(range) => selector.add_range(range),
             Err(err) => {
-                eprintln!("Invalid date argument: {} - {}", date_arg, err);
+                tracing::error!("Invalid date argument: {} - {}", date_arg, err);
                 std::process::exit(1);
             }
         }

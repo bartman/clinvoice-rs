@@ -145,7 +145,7 @@ pub fn run(
         match parse_date_arg(date_arg) {
             Ok(range) => selector.add_range(range),
             Err(err) => {
-                eprintln!("Invalid date argument: {} - {}", date_arg, err);
+                tracing::error!("Invalid date argument: {} - {}", date_arg, err);
                 std::process::exit(1);
             }
         }
@@ -154,7 +154,7 @@ pub fn run(
     let time_data = TimeData::new(directory, &selector).expect("Failed to load data");
 
     let escape_mode = config.get_string(&format!("{}.escape", generator_prefix)).unwrap_or("none".to_string());
-    println!("Escape mode {}", escape_mode);
+    tracing::info!("Escape mode {}", escape_mode);
     let mut context_builder = TeraContextBuilder::new();
 
     context_builder.insert("directory", directory);
@@ -175,12 +175,12 @@ pub fn run(
     let flat_config_table = config.get_flattened_values("_");
     for (key, value) in flat_config_table.iter() {
         context_builder.insert(key, value);
-        //println!("{:30}  =>  {}", key, *value);
+        tracing::trace!("VAR  {:30}  =>  {}", key, *value);
     }
 
     let mut days = Vec::new();
     let mut subtotal_amount = 0.0;
-    let rate = config.get_f64("contract.hourly_rate").unwrap_or(0.0);
+    let hourly_rate = config.get_f64("contract.hourly_rate").unwrap_or(0.0);
 
     let mut sorted_dates: Vec<_> = time_data.entries.keys().collect();
     sorted_dates.sort();
@@ -202,10 +202,10 @@ pub fn run(
     for (index, date) in sorted_dates.iter().enumerate() {
         let entries = &time_data.entries[date];
         let total_hours: f32 = entries.iter().map(|e| e.hours).sum();
-        let cost = total_hours as f64 * rate;
+        let cost = total_hours as f64 * hourly_rate;
         subtotal_amount += cost;
 
-        //println!("{} {} {}", date, total_hours, cost);
+        tracing::trace!("DAY  {} {:3}  {}", date, total_hours, cost);
 
         let descriptions: Vec<_> = entries.iter().map(|e| e.description.as_str()).collect();
         let mut description = descriptions.join("; ");
@@ -292,15 +292,16 @@ pub fn run(
 
     if output_path == "-" {
         println!("{}", rendered);
-    } else {
-        println!("Generating {}", output_path);
-        let mut file = File::create(output_path).expect("Failed to create output file");
-        file.write_all(rendered.as_bytes())
-            .expect("Failed to write to output file");
+        return;
     }
 
+    tracing::info!("Generating {}", output_path);
+    let mut file = File::create(output_path).expect("Failed to create output file");
+    file.write_all(rendered.as_bytes())
+        .expect("Failed to write to output file");
+
     if let Some(builder) = build_command {
-        println!("Build with {}", builder.to_string());
+        tracing::info!("Build with {}", builder.to_string());
 
         let status = Command::new("sh")
             .arg("-c")
@@ -310,7 +311,7 @@ pub fn run(
             .expect("Failed to execute build command");
 
         if !status.success() {
-            eprintln!("Build command failed with status: {:?}", status);
+            tracing::error!("Build command failed with status: {:?}", status);
             std::process::exit(1);
         }
 

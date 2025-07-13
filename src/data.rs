@@ -55,6 +55,8 @@ impl TimeData {
             let entry = entry?;
             let file_path = entry.path();
             if file_path.is_file() && file_path.extension().and_then(|s| s.to_str()) == Some("cli") {
+                tracing::trace!("FILE  {}", file_path.display());
+
                 let content = fs::read_to_string(&file_path)?;
                 let mut current_date: Option<NaiveDate> = None;
 
@@ -63,6 +65,9 @@ impl TimeData {
                     if line.is_empty() {
                         continue;
                     }
+
+                    tracing::trace!("LINE {}  {}", line_number+1, line);
+
                     if let Some(date) = parse_date(line) {
                         current_date = Some(date);
                     } else if let Some(date) = current_date {

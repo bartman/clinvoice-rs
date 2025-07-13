@@ -1,6 +1,8 @@
-pub fn latex_escape(s: &str) -> String {
+use tracing::Level;
+
+pub fn latex_escape(initial: &str) -> String {
     let mut escaped = String::new();
-    for c in s.chars() {
+    for c in initial.chars() {
         match c {
             '&' => escaped.push_str("\\&"),
             '%' => escaped.push_str("\\%"),
@@ -17,6 +19,9 @@ pub fn latex_escape(s: &str) -> String {
             '|' => escaped.push_str("\\textbar{}"),
             _ => escaped.push(c),
         }
+    }
+    if tracing::enabled!(Level::TRACE) && escaped != initial {
+        tracing::trace!("LATEX  {}  =>  {}", initial, escaped);
     }
     escaped
 }
