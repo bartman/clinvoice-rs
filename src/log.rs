@@ -1,31 +1,17 @@
 use crate::data::{TimeData, DateSelector};
 use crate::parse::{parse_date_arg};
+use crate::color::*;
 use crate::LogFormat;
-use crate::ColorOption;
 use chrono::Datelike;
 use std::collections::HashMap;
-use colored::*;
-use atty;
+use colored::Color;
 
 pub fn run(
     format: LogFormat,
     directory_option: &Option<String>,
-    color: &ColorOption,
     dates: &[String],
 ) {
     let directory = directory_option.as_deref().unwrap_or(".");
-
-    let use_color_stdout = match color {
-        ColorOption::Always => true,
-        ColorOption::Never => false,
-        ColorOption::Auto => atty::is(atty::Stream::Stdout),
-    };
-
-    let use_color_stderr = match color {
-        ColorOption::Always => true,
-        ColorOption::Never => false,
-        ColorOption::Auto => atty::is(atty::Stream::Stderr),
-    };
 
     let mut selector = DateSelector::new();
     for date_arg in dates {
@@ -38,7 +24,7 @@ pub fn run(
         }
     }
 
-    let time_data = TimeData::new(directory, &selector, use_color_stderr).expect("Failed to load data");
+    let time_data = TimeData::new(directory, &selector).expect("Failed to load data");
 
     let mut grand_total: f32 = 0.0;
     let grand_total_indent;
@@ -50,21 +36,12 @@ pub fn run(
                 for entry in &time_data.entries[date] {
                     let date_str = format!("{:04}.{:02}.{:02}", date.year(), date.month(), date.day());
                     let hours_str = format!("{:8.2}", entry.hours);
-                    if use_color_stdout {
-                        println!(
-                            "{}  {}  {}",
-                            date_str.blue().bold(),
-                            hours_str.green().bold(),
-                            entry.description
-                        );
-                    } else {
-                        println!(
-                            "{}  {}  {}",
-                            date_str,
-                            hours_str,
-                            entry.description
-                        );
-                    }
+                    println!(
+                        "{}  {}  {}",
+                        date_str.out_colored(Color::Blue),
+                        hours_str.out_colored(Color::Green),
+                        entry.description
+                    );
                     grand_total = grand_total + entry.hours;
                 }
             }
@@ -80,21 +57,12 @@ pub fn run(
                 let desc_str = descriptions.join("; ");
                 let date_str = format!("{:04}.{:02}.{:02}", date.year(), date.month(), date.day());
                 let hours_str = format!("{:8.2}", total_hours);
-                if use_color_stdout {
-                    println!(
-                        "{}  {}  {}",
-                        date_str.blue().bold(),
-                        hours_str.green().bold(),
-                        desc_str
-                    );
-                } else {
-                    println!(
-                        "{}  {}  {}",
-                        date_str,
-                        hours_str,
-                        desc_str
-                    );
-                }
+                println!(
+                    "{}  {}  {}",
+                    date_str.out_colored(Color::Blue),
+                    hours_str.out_colored(Color::Green),
+                    desc_str
+                );
                 grand_total = grand_total + total_hours;
             }
             grand_total_indent = 12;
@@ -121,21 +89,12 @@ pub fn run(
                 let date_str = format!("{:04}.{:02}", year, month);
                 let hours_str = format!("{:8.2}", total_hours);
                 let count_str = format!("{} day{}", day_count, match day_count { 1 => "", _ => "s" });
-                if use_color_stdout {
-                    println!(
-                        "{}  {}  ({})",
-                        date_str.blue().bold(),
-                        hours_str.green().bold(),
-                        count_str.yellow().bold()
-                    );
-                } else {
-                    println!(
-                        "{}  {}  ({})",
-                        date_str,
-                        hours_str,
-                        count_str
-                    );
-                }
+                println!(
+                    "{}  {}  ({})",
+                    date_str.out_colored(Color::Blue),
+                    hours_str.out_colored(Color::Green),
+                    count_str.out_colored(Color::Yellow),
+                );
             }
             grand_total_indent = 9;
         }
@@ -168,29 +127,19 @@ pub fn run(
                 let year_str = format!("{:04}", year);
                 let hours_str = format!("{:8.2}", total_hours);
                 let count_str = format!("{} day{}", day_count, match day_count { 1 => "", _ => "s" });
-                if use_color_stdout {
-                    println!(
-                        "{}  {}  ({})",
-                        year_str.blue().bold(),
-                        hours_str.green().bold(),
-                        count_str.yellow().bold()
-                    );
-                } else {
-                    println!(
-                        "{}  {}  ({})",
-                        year_str,
-                        hours_str,
-                        count_str
-                    );
-                }
+                println!(
+                    "{}  {}  ({})",
+                    year_str.out_colored(Color::Blue),
+                    hours_str.out_colored(Color::Green),
+                    count_str.out_colored(Color::Yellow),
+                );
             }
             grand_total_indent = 6;
         }
     }
     let grand_total_str = format!("{:8.2}", grand_total);
-    if use_color_stdout {
-        println!("{:<width$}{}", "Total:".red().bold(), grand_total_str.green().bold(), width = grand_total_indent);
-    } else {
-        println!("{:<width$}{}", "Total:", grand_total_str, width = grand_total_indent);
-    }
+    println!("{:<width$}{}",
+        "Total:".out_colored(Color::Red),
+        grand_total_str.out_colored(Color::Green),
+        width = grand_total_indent);
 }

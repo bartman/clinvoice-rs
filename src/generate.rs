@@ -1,4 +1,3 @@
-use crate::ColorOption;
 use crate::config::Config;
 use crate::data::{DateSelector, TimeData};
 use crate::parse::parse_date_arg;
@@ -116,7 +115,6 @@ pub fn run(
     sequence_option: &Option<u32>,
     directory_option: &Option<String>,
     config_file: &Option<String>,
-    _color: &ColorOption,
     dates: &[String],
 ) {
     let config = Config::new(config_file.as_deref(), directory_option.as_deref())
@@ -153,7 +151,7 @@ pub fn run(
         }
     }
 
-    let time_data = TimeData::new(directory, &selector, false).expect("Failed to load data");
+    let time_data = TimeData::new(directory, &selector).expect("Failed to load data");
 
     let escape_mode = config.get_string(&format!("{}.escape", generator_prefix)).unwrap_or("none".to_string());
     println!("Escape mode {}", escape_mode);

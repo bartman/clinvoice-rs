@@ -1,9 +1,10 @@
 use crate::parse::{parse_date, parse_entry};
+use crate::color::*;
 use chrono::{NaiveDate};
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
-use colored::*;
+use colored::Color;
 
 #[derive(Debug)]
 pub struct Entry {
@@ -46,7 +47,7 @@ pub struct TimeData {
 }
 
 impl TimeData {
-    pub fn new(dir_path: &str, selector: &DateSelector, use_color: bool) -> Result<Self, std::io::Error> {
+    pub fn new(dir_path: &str, selector: &DateSelector) -> Result<Self, std::io::Error> {
         let mut entries = HashMap::new();
         let path = Path::new(dir_path);
 
@@ -72,39 +73,19 @@ impl TimeData {
                                 }
                                 Err(err) => {
                                     let path_line = format!("{}:{}", file_path.display(), line_number + 1);
-                                    if use_color {
-                                        eprintln!(
-                                            "{}: {}\n\t{}",
-                                            path_line.yellow().bold(),
-                                            err.red().bold(),
-                                            line
-                                        );
-                                    } else {
-                                        eprintln!(
-                                            "{}: {}\n\t{}",
-                                            path_line,
-                                            err,
-                                            line
-                                        );
-                                    }
+                                    tracing::warn!("{}\n\t{}: {}",
+                                        err.err_colored(Color::Yellow),
+                                        path_line, line);
                                 }
                             }
                         }
                     } else {
                         let path_line = format!("{}:{}", file_path.display(), line_number + 1);
-                        if use_color {
-                            eprintln!(
-                                "{}: Expected date, found:\n\t{}",
-                                path_line.yellow().bold(),
-                                line
-                            );
-                        } else {
-                            eprintln!(
-                                "{}: Expected date, found:\n\t{}",
-                                path_line,
-                                line
-                            );
-                        }
+
+                        let err = "Expected date, found:";
+                        tracing::warn!("{}\n\t{}: {}",
+                            err.err_colored(Color::Yellow),
+                            path_line, line);
                     }
                 }
             }

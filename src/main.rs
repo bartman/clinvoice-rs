@@ -1,13 +1,7 @@
 use clap::{Parser, Subcommand, ValueEnum};
 use clap::CommandFactory;
 use crate::logger::TraceLevel;
-
-#[derive(ValueEnum, Clone, Debug)]
-enum ColorOption {
-    Always,
-    Auto,
-    Never,
-}
+use crate::color::*;
 
 #[derive(Parser)]
 struct Cli {
@@ -53,26 +47,28 @@ pub enum LogFormat {
     Year,
 }
 
-mod parse;
-mod data;
-mod log;
-mod generate;
+mod color;
 mod config;
+mod data;
+mod generate;
 mod latex;
+mod log;
 mod logger;
+mod parse;
 
 fn main() {
     let cli = Cli::parse();
+    color::init(&cli.color);
     logger::init(&cli.debug);
     match cli.command {
         None => {
             Cli::command().print_long_help().unwrap();
         }
         Some(Command::Log { format, dates }) => {
-            log::run(format, &cli.directory, &cli.color, &dates)
+            log::run(format, &cli.directory, &dates)
         },
         Some(Command::Generate { output, generator, sequence, dates }) => {
-            generate::run(output, &generator, &sequence, &cli.directory, &cli.config, &cli.color, &dates)
+            generate::run(output, &generator, &sequence, &cli.directory, &cli.config, &dates)
         }
     }
 }

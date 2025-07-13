@@ -26,11 +26,11 @@ pub fn init(trace_level : &TraceLevel) {
     tracing_subscriber::registry()
         .with(
             fmt::layer()
-                // Display the source code location of the log message.
                 .with_file(true)
                 .with_line_number(true)
-                // Do not display the target (module path) of the log message.
                 .with_target(false)
+                .without_time()
+                .with_writer(std::io::stderr)
         )
         .with(
             // Filter logs based on the RUST_LOG env var, or info level by default.
