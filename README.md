@@ -8,15 +8,43 @@ This is an oxidized version of [clinvoice-zsh](https://github.com/bartman/clinvo
 
 ## Timesheets
 
-Timesheet data is stored in `.cli` files. These files have a simple format, with each line representing either a date or a time entry. Here is an example:
+Timesheet data is stored in `.cli` files. These files have a simple format, with each line representing either a date or a time entry.
+
+### Time Entries
+
+Time entries specify hours worked and a description.
 
 ```
 2025.07.01
-8h = Project A
+  8h = Project A
+  9-12 = Project B
+```
 
-2025.07.02
-9-12 = Project B
-13-17 = Project C
+You can also specify negative hours for discounts:
+
+```
+2025.07.13
+  -2h = Discount for early payment
+```
+
+### Fixed Cost Entries
+
+Fixed cost entries allow you to add or subtract fixed amounts to the invoice.
+
+```
+2025.07.13
+  $100 = Some fixed cost
+  -$50 = Discount for something else
+```
+
+### Notes
+
+Lines starting with `*` or `-` are treated as notes and are ignored in calculations but can be included in templates.
+
+```
+2025.07.13
+  * This is a note about the work done today.
+  - Another note.
 ```
 
 ## Configuration
