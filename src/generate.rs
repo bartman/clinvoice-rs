@@ -181,7 +181,7 @@ pub fn run(
     }
 
     let mut days = Vec::new();
-    let mut subtotal_amount = 0.0;
+        let mut subtotal_amount = 0.0f64;
     let hourly_rate = config.get_f64("contract.hourly_rate").unwrap_or(0.0);
 
     let mut sorted_dates: Vec<_> = time_data.entries.keys().collect();
@@ -203,13 +203,31 @@ pub fn run(
 
     for (index, date) in sorted_dates.iter().enumerate() {
         let entries = &time_data.entries[date];
-        let total_hours: f32 = entries.iter().map(|e| e.hours).sum();
-        let cost = total_hours as f64 * hourly_rate;
+        let mut total_hours = 0.0;
+                let mut cost = 0.0f64;
+        let mut descriptions = Vec::new();
+
+        for entry in entries {
+            match entry {
+                crate::data::Entry::Time(h, d) => {
+                    total_hours += h;
+                    descriptions.push(d.clone());
+                }
+                crate::data::Entry::FixedCost(c, d) => {
+                    cost += *c as f64;
+                    descriptions.push(d.clone());
+                }
+                crate::data::Entry::Note(n) => {
+                    descriptions.push(n.clone());
+                }
+            }
+        }
+
+        cost += total_hours as f64 * hourly_rate;
         subtotal_amount += cost;
 
         tracing::trace!("DAY  {} {:3}  {}", date, total_hours, cost);
 
-        let descriptions: Vec<_> = entries.iter().map(|e| e.description.as_str()).collect();
         let mut description = descriptions.join("; ");
         if escape_mode == "latex" {
             description = latex_escape(&description);
@@ -219,7 +237,7 @@ pub fn run(
             index: index + 1,
             date: date.format("%Y-%m-%d").to_string(),
             hours: total_hours,
-            cost,
+            cost: cost as f64,
             description: description,
         });
     }
@@ -233,7 +251,7 @@ pub fn run(
     context_builder.insert("tax_amount", &tax_amount);
     context_builder.insert("total_amount", &total_amount);
 
-    let total_hours: f32 = time_data.entries.values().flat_map(|entries| entries.iter().map(|e| e.hours)).sum();
+    let total_hours: f32 = days.iter().map(|d| d.hours).sum();
     context_builder.insert("total_hours", &total_hours);
 
     let mut tera = Tera::default();

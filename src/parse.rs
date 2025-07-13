@@ -28,7 +28,7 @@ pub fn parse_specifier_to_range(spec: &str) -> Result<DateRange, String> {
         2 => {
             let year: i32 = parts[0].parse().map_err(|_| "Invalid year".to_string())?;
             let month: u32 = parts[1].parse().map_err(|_| "Invalid month".to_string())?;
-            if month < 1 || month > 12 {
+            if !(1..=12).contains(&month) {
                 return Err("Month out of range".to_string());
             }
             let start = NaiveDate::from_ymd_opt(year, month, 1).ok_or("Invalid date".to_string())?;
@@ -65,14 +65,9 @@ pub fn parse_time_spec(time_spec: &str) -> Result<f32, String> {
     let time_spec = time_spec.trim();
     if time_spec.ends_with('h') {
         let hours_str = time_spec.trim_end_matches('h');
-        let hours = hours_str
+        hours_str
             .parse::<f32>()
-            .map_err(|_| "Invalid hour format".to_string())?;
-        if hours >= 0.0 {
-            Ok(hours)
-        } else {
-            Err("Negative hours are invalid".to_string())
-        }
+            .map_err(|_| "Invalid hour format".to_string())
     } else if time_spec.contains('-') {
         let parts: Vec<&str> = time_spec.split('-').map(|s| s.trim()).collect();
         if parts.len() != 2 {
@@ -108,34 +103,51 @@ pub fn parse_time_spec(time_spec: &str) -> Result<f32, String> {
     }
 }
 
-pub fn parse_entry(line: &str) -> Result<Entry, String> {
+pub fn parse_line(line: &str) -> Result<Entry, String> {
+    let line = line.trim();
+    if line.starts_with('-') || line.starts_with('*') {
+        let (first, rest) = line.split_at(1);
+        if first == "-" && rest.contains('=') {
+            // This is a negative cost or time entry, not a note
+        } else {
+            return Ok(Entry::Note(rest.trim().to_string()));
+        }
+    }
+
     let parts: Vec<&str> = line.splitn(2, '=').map(|s| s.trim()).collect();
     if parts.len() != 2 {
-        return Err("Entry must have exactly two parts: time specs and description".to_string());
+        return Err("Entry must have exactly two parts: value and description".to_string());
     }
-    let left = parts[0];
+
+    let value_part = parts[0];
     let description = parts[1].to_string();
-    let time_specs: Vec<&str> = left.split(',').map(|s| s.trim()).collect();
-    if time_specs.is_empty() {
-        return Err("No time specifications provided".to_string());
+
+    if value_part.starts_with('$') {
+        let cost_str = value_part.trim_start_matches('$');
+        let cost = cost_str.parse::<f32>().map_err(|_| "Invalid cost format".to_string())?;
+        Ok(Entry::FixedCost(cost, description))
+    } else if value_part.starts_with("-$") {
+        let cost_str = value_part.trim_start_matches("-$");
+        let cost = cost_str.parse::<f32>().map_err(|_| "Invalid cost format".to_string())?;
+        Ok(Entry::FixedCost(-cost, description))
     }
-    let mut total_hours = 0.0;
-    for time_spec in time_specs {
-        let hours = parse_time_spec(time_spec)?;
-        if hours < 0.0 {
-            return Err("Negative hours are invalid".to_string());
+    else {
+        let time_specs: Vec<&str> = value_part.split(',').map(|s| s.trim()).collect();
+        if time_specs.is_empty() {
+            return Err("No time specifications provided".to_string());
         }
-        total_hours += hours;
+        let mut total_hours = 0.0;
+        for time_spec in time_specs {
+            total_hours += parse_time_spec(time_spec)?;
+        }
+        Ok(Entry::Time(total_hours, description))
     }
-    Ok(Entry {
-        hours: total_hours,
-        description,
-    })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::data::Entry;
     use chrono::NaiveDate;
 
     #[test]
@@ -242,6 +254,7 @@ mod tests {
         assert_eq!(parse_time_spec("8h").unwrap(), 8.0);
         assert_eq!(parse_time_spec("0.5h").unwrap(), 0.5);
         assert_eq!(parse_time_spec("10.0h").unwrap(), 10.0);
+        assert_eq!(parse_time_spec("-5h").unwrap(), -5.0); // Negative hours
     }
 
     #[test]
@@ -254,7 +267,6 @@ mod tests {
 
     #[test]
     fn test_parse_time_spec_invalid() {
-        assert!(parse_time_spec("-5h").is_err()); // Negative hours
         assert!(parse_time_spec("invalid").is_err());
         assert!(parse_time_spec("9:00").is_err()); // Not a range or hours
         assert!(parse_time_spec("9:00-").is_err()); // Incomplete range
@@ -262,37 +274,48 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_entry_valid() {
-        let entry = parse_entry("8h = Development").unwrap();
-        assert_eq!(entry.hours, 8.0);
-        assert_eq!(entry.description, "Development");
-
-        let entry = parse_entry("9:00-17:00 = Testing").unwrap();
-        assert_eq!(entry.hours, 8.0);
-        assert_eq!(entry.description, "Testing");
-
-        let entry = parse_entry("2h, 3h = Meeting").unwrap();
-        assert_eq!(entry.hours, 5.0);
-        assert_eq!(entry.description, "Meeting");
+    fn test_parse_line_time_entry() {
+        let entry = parse_line("8h = Development").unwrap();
+        assert!(matches!(entry, Entry::Time(h, d) if h == 8.0 && d == "Development"));
     }
 
     #[test]
-    fn test_parse_entry_invalid() {
-        assert!(parse_entry("8h").is_err()); // Missing description
-        assert!(parse_entry("= Description").is_err()); // Missing time spec
-        assert!(parse_entry("invalid = Description").is_err()); // Invalid time spec
-        assert!(parse_entry("").is_err()); // Empty string
-        assert!(parse_entry("9:00-17:00, -1h = Invalid Entry").is_err()); // Negative hours in multiple specs
+    fn test_parse_line_time_entry_negative() {
+        let entry = parse_line("-2h = Correction").unwrap();
+        assert!(matches!(entry, Entry::Time(h, d) if h == -2.0 && d == "Correction"));
     }
 
     #[test]
-    fn test_parse_entry_multiple_time_specs() {
-        let entry = parse_entry("1h, 2h, 3h = Multiple Tasks").unwrap();
-        assert_eq!(entry.hours, 6.0);
-        assert_eq!(entry.description, "Multiple Tasks");
+    fn test_parse_line_multiple_time_specs() {
+        let entry = parse_line("1h, 2h, 3h = Multiple Tasks").unwrap();
+        assert!(matches!(entry, Entry::Time(h, d) if h == 6.0 && d == "Multiple Tasks"));
+    }
 
-        let entry = parse_entry("9:00-10:00, 11:00-12:00 = Another Multiple").unwrap();
-        assert_eq!(entry.hours, 2.0);
-        assert_eq!(entry.description, "Another Multiple");
+    #[test]
+    fn test_parse_line_fixed_cost() {
+        let entry = parse_line("$100 = Item").unwrap();
+        assert!(matches!(entry, Entry::FixedCost(c, d) if c == 100.0 && d == "Item"));
+    }
+
+    #[test]
+    fn test_parse_line_fixed_cost_negative() {
+        let entry = parse_line("-$100 = Discount").unwrap();
+        assert!(matches!(entry, Entry::FixedCost(c, d) if c == -100.0 && d == "Discount"));
+    }
+
+    #[test]
+    fn test_parse_line_note() {
+        let entry = parse_line("- A note").unwrap();
+        assert!(matches!(entry, Entry::Note(s) if s == "A note"));
+        let entry = parse_line("* Another note").unwrap();
+        assert!(matches!(entry, Entry::Note(s) if s == "Another note"));
+    }
+
+    #[test]
+    fn test_parse_line_invalid() {
+        assert!(parse_line("8h").is_err()); // Missing description
+        assert!(parse_line("= Description").is_err()); // Missing time spec
+        assert!(parse_line("invalid = Description").is_err()); // Invalid time spec
+        assert!(parse_line("").is_err()); // Empty string
     }
 }

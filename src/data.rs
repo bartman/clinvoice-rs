@@ -1,4 +1,4 @@
-use crate::parse::{parse_date, parse_entry};
+use crate::parse::{parse_date, parse_line};
 use crate::color::*;
 use chrono::{NaiveDate};
 use std::collections::HashMap;
@@ -7,9 +7,10 @@ use std::path::Path;
 use colored::Color;
 
 #[derive(Debug)]
-pub struct Entry {
-    pub hours: f32,
-    pub description: String,
+pub enum Entry {
+    Time(f32, String),
+    FixedCost(f32, String),
+    Note(String),
 }
 
 #[derive(Debug)]
@@ -72,7 +73,7 @@ impl TimeData {
                         current_date = Some(date);
                     } else if let Some(date) = current_date {
                         if selector.selected(&date) {
-                            match parse_entry(line) {
+                            match parse_line(line) {
                                 Ok(entry) => {
                                     entries.entry(date).or_insert_with(Vec::new).push(entry);
                                 }

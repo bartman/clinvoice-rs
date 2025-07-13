@@ -35,14 +35,19 @@ pub fn run(
             for date in dates {
                 for entry in &time_data.entries[date] {
                     let date_str = format!("{:04}.{:02}.{:02}", date.year(), date.month(), date.day());
-                    let hours_str = format!("{:8.2}", entry.hours);
+                    let (hours, description) = match entry {
+                        crate::data::Entry::Time(h, d) => (*h, d.clone()),
+                        crate::data::Entry::FixedCost(_, d) => (0.0, d.clone()),
+                        crate::data::Entry::Note(n) => (0.0, n.clone()),
+                    };
+                    let hours_str = format!("{:8.2}", hours);
                     println!(
                         "{}  {}  {}",
                         date_str.out_colored(Color::Blue),
                         hours_str.out_colored(Color::Green),
-                        entry.description
+                        description
                     );
-                    grand_total = grand_total + entry.hours;
+                    grand_total += hours;
                 }
             }
             grand_total_indent = 12;
@@ -52,8 +57,22 @@ pub fn run(
             dates.sort();
             for date in dates {
                 let entries = &time_data.entries[date];
-                let total_hours: f32 = entries.iter().map(|e| e.hours).sum();
-                let descriptions: Vec<_> = entries.iter().map(|e| e.description.as_str()).collect();
+                let mut total_hours: f32 = 0.0;
+                let mut descriptions = Vec::new();
+                for entry in entries {
+                    match entry {
+                        crate::data::Entry::Time(h, d) => {
+                            total_hours += h;
+                            descriptions.push(d.clone());
+                        }
+                        crate::data::Entry::FixedCost(_, d) => {
+                            descriptions.push(d.clone());
+                        }
+                        crate::data::Entry::Note(n) => {
+                            descriptions.push(n.clone());
+                        }
+                    }
+                }
                 let desc_str = descriptions.join("; ");
                 let date_str = format!("{:04}.{:02}.{:02}", date.year(), date.month(), date.day());
                 let hours_str = format!("{:8.2}", total_hours);
@@ -74,7 +93,12 @@ pub fn run(
                 let year = date.year();
                 let month = date.month();
                 let day = date.day();
-                let total: f32 = entries.iter().map(|e| e.hours).sum();
+                let total: f32 = entries.iter().map(|e| {
+                    match e {
+                        crate::data::Entry::Time(h, _) => *h,
+                        _ => 0.0,
+                    }
+                }).sum();
                 *monthly_totals.entry((year, month)).or_insert(0.0) += total;
                 *monthly_counts.entry((year, month)).or_insert(0) |= 1u64 << day;
                 grand_total = grand_total + total;
@@ -105,7 +129,12 @@ pub fn run(
                 let year = date.year();
                 let month = date.month();
                 let day = date.day();
-                let total: f32 = entries.iter().map(|e| e.hours).sum();
+                let total: f32 = entries.iter().map(|e| {
+                    match e {
+                        crate::data::Entry::Time(h, _) => *h,
+                        _ => 0.0,
+                    }
+                }).sum();
                 *yearly_totals.entry(year).or_insert(0.0) += total;
                 *monthly_counts.entry((year, month)).or_insert(0) |= 1u64 << day;
                 grand_total = grand_total + total;

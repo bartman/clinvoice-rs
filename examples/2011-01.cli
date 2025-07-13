@@ -3,8 +3,11 @@
     1h = which shows how to provide discounts
     6h = and adds notes
 
-2011.01 total-discount
-    $100 = $100 off coupon
+2011.01.02
+    $100 = fixed fee
 
-2011.01 notes
-    some notes go here
+2011.01.03
+    -$100 = $100 off coupon
+
+2011.01.04
+    - some notes go here
