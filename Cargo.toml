@@ -22,3 +22,4 @@ tracing-subscriber = { version = "0.3.19", features = ["env-filter", "fmt"] }
 ctor = "0.2.1"
 tempfile = "3.20.0"
 clinvoice = { path = "." }
+serial_test = "3.2.0"

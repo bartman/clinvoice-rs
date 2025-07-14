@@ -192,6 +192,7 @@ mod tests {
     use super::*;
     use tempfile::NamedTempFile;
     use std::io::Write;
+    use serial_test::serial;
 
     // Helper function to create a temporary config file
     fn create_temp_config(content: &str) -> NamedTempFile {
@@ -397,6 +398,7 @@ mod tests {
     }
 
     #[test]
+    #[serial(set_current_dir)]
     fn test_config_find_config_path_default_locations() -> Result<(), Box<dyn std::error::Error>> {
         let original_home = env::var("HOME");
         let original_dir = env::current_dir()?;
@@ -423,6 +425,7 @@ mod tests {
     }
 
     #[test]
+    #[serial(set_current_dir)]
     fn test_config_find_config_path_no_config_found_isolated() -> Result<(), Box<dyn std::error::Error>> {
         let original_home = env::var("HOME");
         let original_dir = env::current_dir()?;
