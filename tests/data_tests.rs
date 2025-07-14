@@ -33,6 +33,7 @@ $50 = Fixed Fee
 #[test]
 fn test_time_data_new_with_comments() -> Result<(), Box<dyn std::error::Error>> {
     let dir = tempdir()?;
+    tracing::trace!("tmpdir: {}", dir.path().display());
     let file_content = r#"
 # This is a full line comment
 2025.01.01
@@ -61,6 +62,7 @@ fn test_time_data_new_with_comments() -> Result<(), Box<dyn std::error::Error>> 
 #[test]
 fn test_time_data_new_all_files() -> Result<(), Box<dyn std::error::Error>> {
     let dir = tempdir()?;
+    tracing::trace!("tmpdir: {}", dir.path().display());
     create_test_cli_files(dir.path())?;
 
     let selector = DateSelector::new(); // Selects all dates by default
@@ -97,6 +99,7 @@ fn test_time_data_new_all_files() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn test_time_data_new_with_date_selector() -> Result<(), Box<dyn std::error::Error>> {
     let dir = tempdir()?;
+    tracing::trace!("tmpdir: {}", dir.path().display());
     create_test_cli_files(dir.path())?;
 
     let mut selector = DateSelector::new();
@@ -114,6 +117,7 @@ fn test_time_data_new_with_date_selector() -> Result<(), Box<dyn std::error::Err
 #[test]
 fn test_time_data_new_empty_directory() -> Result<(), Box<dyn std::error::Error>> {
     let dir = tempdir()?;
+    tracing::trace!("tmpdir: {}", dir.path().display());
     let selector = DateSelector::new();
     let time_data = TimeData::new(dir.path().to_str().unwrap(), &selector)?;
     assert!(time_data.entries.is_empty());
@@ -123,6 +127,7 @@ fn test_time_data_new_empty_directory() -> Result<(), Box<dyn std::error::Error>
 #[test]
 fn test_time_data_new_non_existent_directory() {
     let dir = tempdir().unwrap();
+    tracing::trace!("tmpdir: {}", dir.path().display());
     let non_existent_path = dir.path().join("non_existent_dir");
     let selector = DateSelector::new();
     let result = TimeData::new(non_existent_path.to_str().unwrap(), &selector);

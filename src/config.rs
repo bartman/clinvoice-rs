@@ -387,6 +387,7 @@ mod tests {
     #[test]
     fn test_config_find_config_path_data_directory() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = tempfile::tempdir()?;
+        env::set_var("temp", temp_dir.path());
         let config_path = temp_dir.path().join("clinvoice.toml");
         std::fs::write(&config_path, "key = \"value\"")?;
 
@@ -402,9 +403,11 @@ mod tests {
 
         let temp_home_dir = tempfile::tempdir()?;
         env::set_var("HOME", temp_home_dir.path());
+        tracing::trace!("HOME: {}", temp_home_dir.path().display());
 
         let temp_current_dir = tempfile::tempdir()?;
         env::set_current_dir(&temp_current_dir)?;
+        tracing::trace!("PWD: {}", temp_current_dir.path().display());
 
         let config_path = temp_current_dir.path().join("clinvoice.toml");
         std::fs::write(&config_path, "key = \"value\"")?;
@@ -426,9 +429,11 @@ mod tests {
 
         let temp_home_dir = tempfile::tempdir()?;
         env::set_var("HOME", temp_home_dir.path());
+        tracing::trace!("HOME: {}", temp_home_dir.path().display());
 
         let temp_current_dir = tempfile::tempdir()?;
         env::set_current_dir(&temp_current_dir)?;
+        tracing::trace!("PWD: {}", temp_current_dir.path().display());
 
         let result = Config::find_config_path(None, None);
         assert!(result.is_err());

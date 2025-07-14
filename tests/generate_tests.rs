@@ -11,6 +11,7 @@ fn create_test_env(
     config_content: &str,
 ) -> Result<tempfile::TempDir, Box<dyn std::error::Error>> {
     let temp_dir = tempdir()?;
+    tracing::trace!("tmpdir: {}", temp_dir.path().display());
 
     // Create .cli files
     for (filename, content) in cli_contents {
