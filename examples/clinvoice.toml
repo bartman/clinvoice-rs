@@ -24,8 +24,8 @@
     percent     = 10
     description = "tax number 12345"
 
-[sequence]
-    file        = ".sequence"
+[index]
+    file        = ".index"
 
 [generator]
     default     = "pdf"

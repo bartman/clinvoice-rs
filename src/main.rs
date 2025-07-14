@@ -48,10 +48,11 @@ mod color;
 mod config;
 mod data;
 mod generate;
+mod index;
 mod latex;
 mod log;
-mod tracing;
 mod parse;
+mod tracing;
 
 fn main() {
     let cli = Cli::parse();

@@ -3,6 +3,7 @@ use crate::data::{DateSelector, TimeData};
 use crate::latex::latex_escape;
 
 use crate::color::*;
+use crate::index::Index;
 use chrono::{Local, NaiveDate};
 use colored::Color;
 use serde::Serialize;
@@ -119,23 +120,28 @@ pub fn run(
     config_file: &Option<String>,
     dates: &[String],
 ) {
-    let config = Config::new(config_file.as_deref(), directory_option.as_deref())
-        .expect("Failed to load config");
     let directory = directory_option.as_deref().unwrap_or(".");
-
+    let config = Config::new(config_file.as_deref(), Some(directory))
+        .expect("Failed to load config");
     let use_generator = if let Some(selected) = generator_option {
         selected.clone()
     } else {
         config.get_string("generator.default").expect("generator.default is not defined in config")
     };
 
-    let use_sequence:u32 = if let Some(selected) = sequence_option {
-        *selected
-    } else {
-        1
-    };
-
     let generator_prefix = format!("generator.{}", use_generator);
+
+    let index_file_name = config.get_string("index.file").unwrap_or(".index".to_string());
+    let index_file_path = Path::new(directory).join(index_file_name);
+    tracing::info!("Index file {}", index_file_path.display());
+    let mut index = Index::new(&index_file_path).expect("Failed to open or lock index file");
+
+    let sequence:u32 = if let Some(seq) = sequence_option {
+        index.add_sequence(*seq, dates)
+    } else {
+        index.find_sequence(dates)
+    };
+    tracing::info!("Sequence is {}", sequence);
     let mut template_path = config
         .get_string(&format!("{}.template", generator_prefix))
         .expect("template not specified in config");
@@ -159,13 +165,6 @@ pub fn run(
     for (key, value) in flat_config_table.iter() {
         context_builder.insert(key, value);
     }
-    context_builder.insert("sequence", &use_sequence);
-
-    let sequence = if let Some(selected) = sequence_option {
-        *selected
-    } else {
-        0
-    };
     context_builder.insert("sequence", &sequence);
 
     let flat_config_table = config.get_flattened_values("_");
@@ -358,9 +357,11 @@ pub fn run(
     }
 
     tracing::info!("Generating {}", output_path);
-    let mut file = File::create(output_path).expect("Failed to create output file");
+    let mut file = File::create(&output_path).expect("Failed to create output file");
     file.write_all(rendered.as_bytes())
         .expect("Failed to write to output file");
+
+    index.save().expect("Failed to save index file");
 
     if let Some(builder) = build_command {
         process_builder(builder);
