@@ -1,0 +1,1 @@
+log --format month 2010.11
