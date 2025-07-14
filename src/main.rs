@@ -1,7 +1,8 @@
-use clap::{Parser, Subcommand, ValueEnum};
+use clap::{Parser, Subcommand};
 use clap::CommandFactory;
 use crate::logger::TraceLevel;
 use crate::color::*;
+use crate::log::LogFormat;
 
 #[derive(Parser)]
 struct Cli {
@@ -41,13 +42,7 @@ enum Command {
     },
 }
 
-#[derive(ValueEnum, Clone, Debug)]
-pub enum LogFormat {
-    Full,
-    Day,
-    Month,
-    Year,
-}
+
 
 mod color;
 mod config;

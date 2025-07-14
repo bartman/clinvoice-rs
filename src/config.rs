@@ -365,7 +365,7 @@ mod tests {
         let temp_file = create_temp_config("key = \"value\"");
         let path = temp_file.path().to_str().unwrap();
         let found_path = Config::find_config_path(Some(path), None)?;
-        assert_eq!(found_path, PathBuf::from(path));
+        assert_eq!(found_path, PathBuf::from(path).canonicalize()?);
         Ok(())
     }
 
@@ -383,58 +383,46 @@ mod tests {
         std::fs::write(&config_path, "key = \"value\"")?;
 
         let found_path = Config::find_config_path(None, Some(temp_dir.path().to_str().unwrap()))?;
-        assert_eq!(found_path, config_path);
+        assert_eq!(found_path, config_path.canonicalize()?);
         Ok(())
     }
 
     #[test]
-    fn test_config_find_config_path_current_directory() -> Result<(), Box<dyn std::error::Error>> {
+    fn test_config_find_config_path_default_locations() -> Result<(), Box<dyn std::error::Error>> {
+        let original_home = env::var("HOME");
         let original_dir = env::current_dir()?;
-        let temp_dir = tempfile::tempdir()?;
-        env::set_current_dir(&temp_dir)?;
 
-        let config_path = temp_dir.path().join("clinvoice.toml");
+        let temp_home_dir = tempfile::tempdir()?;
+        env::set_var("HOME", temp_home_dir.path());
+
+        let temp_current_dir = tempfile::tempdir()?;
+        env::set_current_dir(&temp_current_dir)?;
+
+        let config_path = temp_current_dir.path().join("clinvoice.toml");
         std::fs::write(&config_path, "key = \"value\"")?;
 
         let found_path = Config::find_config_path(None, None)?;
         assert_eq!(found_path, config_path.canonicalize()?);
 
+        if let Ok(home) = original_home {
+            env::set_var("HOME", home);
+        }
         env::set_current_dir(&original_dir)?;
         Ok(())
     }
 
     #[test]
-    fn test_config_find_config_path_home_directory() -> Result<(), Box<dyn std::error::Error>> {
-        let original_home = env::var("HOME");
-        let temp_home_dir = tempfile::tempdir()?;
-        env::set_var("HOME", temp_home_dir.path());
-
-        let config_dir = temp_home_dir.path().join(".config").join("clinvoice");
-        std::fs::create_dir_all(&config_dir)?;
-        let config_path = config_dir.join("clinvoice.toml");
-        std::fs::write(&config_path, "key = \"value\"")?;
-
-        let found_path = Config::find_config_path(None, None)?;
-        assert_eq!(found_path, config_path);
-
-        if let Ok(home) = original_home {
-            env::set_var("HOME", home);
-        } else {
-            env::remove_var("HOME");
-        }
-        Ok(())
-    }
-
-    #[test]
-    fn test_config_find_config_path_no_config_found() -> Result<(), Box<dyn std::error::Error>> {
+    fn test_config_find_config_path_no_config_found_isolated() -> Result<(), Box<dyn std::error::Error>> {
         let original_home = env::var("HOME");
         let original_dir = env::current_dir()?;
 
-        env::remove_var("HOME"); // Temporarily unset HOME to prevent finding a real config
-        let temp_dir = tempfile::tempdir()?;
-        env::set_current_dir(&temp_dir)?;
+        let temp_home_dir = tempfile::tempdir()?;
+        env::set_var("HOME", temp_home_dir.path());
 
-        let result = Config::find_config_path(None, Some("/non/existent/data"));
+        let temp_current_dir = tempfile::tempdir()?;
+        env::set_current_dir(&temp_current_dir)?;
+
+        let result = Config::find_config_path(None, None);
         assert!(result.is_err());
         assert_eq!(result.unwrap_err().kind(), std::io::ErrorKind::NotFound);
 

@@ -1,10 +1,18 @@
 use crate::data::{TimeData, DateSelector};
 use crate::parse::{parse_date_arg};
 use crate::color::*;
-use crate::LogFormat;
 use chrono::Datelike;
 use std::collections::HashMap;
 use colored::Color;
+use clap::ValueEnum;
+
+#[derive(ValueEnum, Clone, Debug)]
+pub enum LogFormat {
+    Full,
+    Day,
+    Month,
+    Year,
+}
 
 pub fn run(
     format: LogFormat,
