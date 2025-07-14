@@ -329,3 +329,126 @@ hourly_rate = "invalid"
 
     Ok(())
 }
+
+#[test]
+fn test_cap_hours_per_day() -> Result<(), Box<dyn std::error::Error>> {
+    let mut cli_contents = HashMap::new();
+    cli_contents.insert(
+        "timesheet.cli",
+        r#"
+2025.01.01
+10h = Project X
+"#,
+    );
+    let config_content = r#"
+[contract]
+hourly_rate = 100.0
+cap_hours_per_day = 8.0
+
+[generator.txt]
+template = "template.txt"
+output = "invoice.txt"
+"#;
+    let template_content = r#"
+Total worked: {{ total_hours_worked  }}
+Total counted: {{ total_hours_counted }} {{ counted_amount }}
+Total billed: {{ total_hours_billed  }} {{ billed_amount }}
+
+Fixed fees: {{ total_fixed_fees }} {{ total_discounts }}
+Overage: {{ overage_hours }} {{ overage_discount }}
+
+Total hours: {{ total_hours }}
+Total amount: {{ total_amount }}
+Day 1: {{ days.0.hours }} {{ days.0.description }}
+"#;
+
+    let temp_dir = create_test_env(&cli_contents, config_content)?;
+    std::fs::write(temp_dir.path().join("template.txt"), template_content)?;
+
+    let output_path = temp_dir.path().join("invoice.txt");
+    let directory_option = Some(temp_dir.path().to_str().unwrap().to_string());
+    let config_file_option = Some(temp_dir.path().join("clinvoice.toml").to_str().unwrap().to_string());
+
+    generate::run(
+        Some(output_path.to_str().unwrap().to_string()),
+        &Some("txt".to_string()),
+        &None,
+        &directory_option,
+        &config_file_option,
+        &[],
+    );
+
+    let generated_content = std::fs::read_to_string(&output_path)?;
+    println!("{}", generated_content);
+
+    assert!(generated_content.contains("Total worked: 10"));
+    assert!(generated_content.contains("Total counted: 8 800")); // Capped at 8 hours
+    assert!(generated_content.contains("Total billed: 8 800"));
+    assert!(generated_content.contains("Total hours: 8"));
+    assert!(generated_content.contains("Total amount: 800"));
+    assert!(generated_content.contains("Day 1: 8 Project X (10 worked, 8 billed)"));
+
+    Ok(())
+}
+
+#[test]
+fn test_cap_hours_per_invoice() -> Result<(), Box<dyn std::error::Error>> {
+    let mut cli_contents = HashMap::new();
+    cli_contents.insert(
+        "timesheet.cli",
+        r#"
+2025.01.01
+8h = Project A
+2025.01.02
+8h = Project B
+"#,
+    );
+    let config_content = r#"
+[contract]
+hourly_rate = 100.0
+cap_hours_per_invoice = 12.0
+
+[generator.txt]
+template = "template.txt"
+output = "invoice.txt"
+"#;
+    let template_content = r#"
+Total worked: {{ total_hours_worked  }}
+Total counted: {{ total_hours_counted }} {{ counted_amount }}
+Total billed: {{ total_hours_billed  }} {{ billed_amount }}
+
+Fixed fees: {{ total_fixed_fees }} {{ total_discounts }}
+Overage: {{ overage_hours }} {{ overage_discount }}
+
+Total hours: {{ total_hours }}
+Total amount: {{ total_amount }}
+"#;
+
+    let temp_dir = create_test_env(&cli_contents, config_content)?;
+    std::fs::write(temp_dir.path().join("template.txt"), template_content)?;
+
+    let output_path = temp_dir.path().join("invoice.txt");
+    let directory_option = Some(temp_dir.path().to_str().unwrap().to_string());
+    let config_file_option = Some(temp_dir.path().join("clinvoice.toml").to_str().unwrap().to_string());
+
+    generate::run(
+        Some(output_path.to_str().unwrap().to_string()),
+        &Some("txt".to_string()),
+        &None,
+        &directory_option,
+        &config_file_option,
+        &[],
+    );
+
+    let generated_content = std::fs::read_to_string(&output_path)?;
+    println!("{}", generated_content);
+
+    assert!(generated_content.contains("Total worked: 16"));
+    assert!(generated_content.contains("Total counted: 16 1600"));
+    assert!(generated_content.contains("Total billed: 12 1200")); // Capped at 12 hours
+    assert!(generated_content.contains("Total hours: 16")); // This is total_hours_counted, not billed
+    assert!(generated_content.contains("Total amount: 1200"));
+    assert!(generated_content.contains("Overage: 4 -400")); // 16 - 12 = 4 hours overage, 4 * 100 = 400 discount
+
+    Ok(())
+}
