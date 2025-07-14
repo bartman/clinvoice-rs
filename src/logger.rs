@@ -60,6 +60,6 @@ mod tests {
     #[ctor]
     fn test_init() {
         color::init(&ColorOption::Auto);
-        init(&TraceLevel::Debug, &"-".to_string());
+        init(&TraceLevel::Info, &"-".to_string());
     }
 }
