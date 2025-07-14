@@ -49,3 +49,17 @@ pub fn init(trace_level : &TraceLevel, trace_output : &String) {
             .init();
     }
 }
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+    use crate::color::{self, ColorOption};
+    use ctor::ctor;
+
+    #[ctor]
+    fn test_init() {
+        color::init(&ColorOption::Auto);
+        init(&TraceLevel::Debug, &"-".to_string());
+    }
+}

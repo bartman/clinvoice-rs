@@ -20,6 +20,7 @@ impl Config {
 
     fn find_config_path(config_file: Option<&str>, data_directory: Option<&str>) -> Result<PathBuf, std::io::Error> {
         if let Some(path) = config_file {
+            tracing::trace!("user specified config_file={}", path);
             let path = PathBuf::from(path);
             if path.exists() {
                 return Ok(path.canonicalize()?);
@@ -31,15 +32,19 @@ impl Config {
         let mut candidates: Vec<PathBuf> = Vec::new();
         // Add other predefined locations
         if let Some(dir) = data_directory {
+            tracing::trace!("user specified directory={}", dir);
             candidates.push(Path::new(dir).join("clinvoice.toml"));
         }
         candidates.push(PathBuf::from("./clinvoice.toml"));
         if let Ok(home) = env::var("HOME") {
+            tracing::trace!("environment HOME={}", home);
             candidates.push(Path::new(&home).join(".config").join("clinvoice").join("clinvoice.toml"));
         }
 
         for candidate in candidates {
+            tracing::trace!("checking candidate {}", candidate.display());
             if candidate.exists() {
+                tracing::debug!("found configuration {}", candidate.display());
                 return Ok(candidate.canonicalize()?);
             }
         }
