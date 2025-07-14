@@ -122,8 +122,10 @@ fn test_time_data_new_empty_directory() -> Result<(), Box<dyn std::error::Error>
 
 #[test]
 fn test_time_data_new_non_existent_directory() {
+    let dir = tempdir().unwrap();
+    let non_existent_path = dir.path().join("non_existent_dir");
     let selector = DateSelector::new();
-    let result = TimeData::new("/non/existent/path", &selector);
+    let result = TimeData::new(non_existent_path.to_str().unwrap(), &selector);
     assert!(result.is_err());
     assert_eq!(result.unwrap_err().kind(), std::io::ErrorKind::NotFound);
 }
