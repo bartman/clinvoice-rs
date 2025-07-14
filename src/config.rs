@@ -29,6 +29,7 @@ impl Config {
         }
 
         let mut candidates: Vec<PathBuf> = Vec::new();
+        // Add other predefined locations
         if let Some(dir) = data_directory {
             candidates.push(Path::new(dir).join("clinvoice.toml"));
         }
