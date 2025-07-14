@@ -175,7 +175,10 @@ pub fn run(
     }
 
     let mut days = Vec::new();
-        let mut subtotal_amount = 0.0f64;
+    let mut total_hours_worked = 0.0f64;
+    let mut total_hours_counted = 0.0f64;
+    let mut total_fees = 0.0f64;
+    let mut total_discounts = 0.0f64;
     let hourly_rate = config.get_f64("contract.hourly_rate").unwrap_or(0.0);
 
     let mut sorted_dates: Vec<_> = time_data.entries.keys().collect();
@@ -195,21 +198,29 @@ pub fn run(
     context_builder.insert("period_start", &period_start.format("%Y-%m-%d").to_string());
     context_builder.insert("period_end", &period_end.format("%Y-%m-%d").to_string());
 
+    let cap_hours_per_day = config.get_f64("contract.cap_hours_per_day").unwrap_or(0.0);
+    let cap_hours_per_invoice = config.get_f64("contract.cap_hours_per_invoice").unwrap_or(0.0);
+
     for (index, date) in sorted_dates.iter().enumerate() {
         let entries = &time_data.entries[date];
-        let mut total_hours = 0.0;
-                let mut cost = 0.0f64;
+        let mut total_hours = 0.0f64;
+        let mut day_cost = 0.0f64;
         let mut descriptions = Vec::new();
 
         for entry in entries {
             match entry {
                 crate::data::Entry::Time(h, d) => {
-                    total_hours += h;
+                    total_hours += *h as f64;
                     descriptions.push(d.clone());
                 }
                 crate::data::Entry::FixedCost(c, d) => {
-                    cost += *c as f64;
+                    let entry_cost = *c as f64;
                     descriptions.push(d.clone());
+                    if entry_cost > 0.0 {
+                        total_fees += entry_cost;
+                    } else {
+                        total_discounts += entry_cost;
+                    }
                 }
                 crate::data::Entry::Note(n) => {
                     descriptions.push(n.clone());
@@ -217,12 +228,22 @@ pub fn run(
             }
         }
 
-        cost += total_hours as f64 * hourly_rate;
-        subtotal_amount += cost;
-
-        tracing::trace!("DAY  {} {:3}  {}", date, total_hours, cost);
-
         let mut description = descriptions.join("; ");
+
+        total_hours_worked += total_hours;
+
+        if cap_hours_per_day > 0.0 && total_hours > 0.0 && total_hours > cap_hours_per_day {
+            description.push_str(&format!(" ({} worked, {} billed)",
+                total_hours, cap_hours_per_day));
+            total_hours = cap_hours_per_day;
+        }
+
+        total_hours_counted += total_hours;
+
+        day_cost += total_hours as f64 * hourly_rate;
+
+        tracing::trace!("DAY  {} {:3}  {}", date, total_hours, day_cost);
+
         if escape_mode == "latex" {
             description = latex_escape(&description);
         }
@@ -230,12 +251,38 @@ pub fn run(
         days.push(Day {
             index: index + 1,
             date: date.format("%Y-%m-%d").to_string(),
-            hours: total_hours,
-            cost: cost as f64,
+            hours: total_hours as f32,
+            cost: day_cost,
             description: description,
         });
     }
 
+    context_builder.insert("total_fixed_fees", &total_fees);
+    context_builder.insert("total_discounts", &total_discounts);
+
+    context_builder.insert("total_hours_worked", &total_hours_worked);
+    context_builder.insert("total_hours_counted", &total_hours_counted);
+
+    let counted_amount = total_hours_counted * hourly_rate;
+    context_builder.insert("counted_amount", &counted_amount);
+
+    let mut overage_hours = 0.0;
+    let mut overage_discount = 0.0;
+    if cap_hours_per_invoice > 0.0 && total_hours_counted > cap_hours_per_invoice  {
+        overage_hours = total_hours_counted - cap_hours_per_invoice;
+        overage_discount = - (overage_hours * hourly_rate);
+    }
+
+    context_builder.insert("overage_hours", &overage_hours);
+    context_builder.insert("overage_discount", &overage_discount);
+
+    let total_hours_billed = total_hours_counted - overage_hours;
+    context_builder.insert("total_hours_billed", &total_hours_billed);
+
+    let billed_amount = total_hours_billed * hourly_rate;
+    context_builder.insert("billed_amount", &billed_amount);
+
+    let subtotal_amount = billed_amount + total_fees + total_discounts;
     context_builder.insert("subtotal_amount", &subtotal_amount);
 
     let tax_percent = config.get_f64("tax.percent").unwrap_or(0.0);
@@ -246,6 +293,7 @@ pub fn run(
     context_builder.insert("total_amount", &total_amount);
 
     let total_hours: f32 = days.iter().map(|d| d.hours).sum();
+    assert!(total_hours as f64 == total_hours_counted);
     context_builder.insert("total_hours", &total_hours);
 
     let mut tera = Tera::default();

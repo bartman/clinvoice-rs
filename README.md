@@ -155,6 +155,17 @@ The following variables are available in your templates:
 *   `tax_amount`: The calculated tax amount.
 *   `total_amount`: The total amount of the invoice (subtotal + tax).
 
+Advanced
+
+* `total_fixed_fees` is a tally of fixed fees (included in `subtotal_amount`)
+* `total_discounts` is a tally of discounts (included in `subtotal_amount`)
+* `total_hours_worked` is number of hours in spreadsheet
+* `total_hours_counted` is number of hours after `contract.cap_hours_per_day` limit is applied
+* `total_hours_billed` is number of hours capped to `contract.cap_hours_per_invoice`
+* `overage_hours` is number of hours counted, but not billed
+* `counted_amount` is `rate * total_hours_counted`
+* `billed_amount` is `rate * total_hours_billed` (included in `subtotal_amount`)
+
 ### Day Variables
 
 These variables are available within the `{% for day in days %}` loop:

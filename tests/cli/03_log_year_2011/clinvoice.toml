@@ -17,7 +17,7 @@
     payment_days        = 30
     # client will not pay for overtime, monthly hours are capped at 64 hours
     cap_hours_per_day   = 10
-    cap_hours_per_month = 64
+    cap_hours_per_invoice = 64
 
 [tax]
     name        = "VAT"

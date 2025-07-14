@@ -43,6 +43,13 @@ template = "template.txt"
 output = "invoice.txt"
 "#;
     let template_content = r#"
+Total worked: {{ total_hours_worked  }}
+Total counted: {{ total_hours_counted }} {{ counted_amount }}
+Total billed: {{ total_hours_billed  }} {{ billed_amount }}
+
+Fixed fees: {{ total_fixed_fees }} {{ total_discounts }}
+Overage: {{ overage_hours }} {{ overage_discount }}
+
 Total hours: {{ total_hours }}
 Total amount: {{ total_amount }}
 "#;
@@ -64,8 +71,17 @@ Total amount: {{ total_amount }}
     );
 
     let generated_content = std::fs::read_to_string(&output_path)?;
+    println!("{}", generated_content);
+
     assert!(generated_content.contains("Total hours: 8"));
     assert!(generated_content.contains("Total amount: 800"));
+
+    assert!(generated_content.contains("Total worked: 8"));
+    assert!(generated_content.contains("Total counted: 8 800"));
+    assert!(generated_content.contains("Total billed: 8 800"));
+
+    assert!(generated_content.contains("Fixed fees: 0 0"));
+    assert!(generated_content.contains("Overage: 0 0"));
 
     Ok(())
 }
@@ -92,6 +108,10 @@ fn test_generate_with_date_selection() -> Result<(), Box<dyn std::error::Error>>
         r#"
 2025.02.01
 6h = Project C
+2025.02.02
+$100 = fixed price (not included)
+2025.02.03
+-$50 = discount (not included)
 "#,
     );
     let config_content = r#"
@@ -103,6 +123,13 @@ template = "template.txt"
 output = "invoice.txt"
 "#;
     let template_content = r#"
+Total worked: {{ total_hours_worked  }}
+Total counted: {{ total_hours_counted }} {{ counted_amount }}
+Total billed: {{ total_hours_billed  }} {{ billed_amount }}
+
+Fixed fees: {{ total_fixed_fees }} {{ total_discounts }}
+Overage: {{ overage_hours }} {{ overage_discount }}
+
 Total hours: {{ total_hours }}
 Total amount: {{ total_amount }}
 "#;
@@ -124,8 +151,17 @@ Total amount: {{ total_amount }}
     );
 
     let generated_content = std::fs::read_to_string(&output_path)?;
+    println!("{}", generated_content);
+
     assert!(generated_content.contains("Total hours: 12")); // 8h + 4h
     assert!(generated_content.contains("Total amount: 1200"));
+
+    assert!(generated_content.contains("Total worked: 12"));
+    assert!(generated_content.contains("Total counted: 12 1200"));
+    assert!(generated_content.contains("Total billed: 12 1200"));
+
+    assert!(generated_content.contains("Fixed fees: 0 0"));
+    assert!(generated_content.contains("Overage: 0 0"));
 
     Ok(())
 }
@@ -154,6 +190,13 @@ template = "template.txt"
 output = "invoice.txt"
 "#;
     let template_content = r#"
+Total worked: {{ total_hours_worked  }}
+Total counted: {{ total_hours_counted }} {{ counted_amount }}
+Total billed: {{ total_hours_billed  }} {{ billed_amount }}
+
+Fixed fees: {{ total_fixed_fees }} {{ total_discounts }}
+Overage: {{ overage_hours }} {{ overage_discount }}
+
 Total hours: {{ total_hours }}
 Total amount: {{ total_amount }}
 "#;
@@ -175,10 +218,19 @@ Total amount: {{ total_amount }}
     );
 
     let generated_content = std::fs::read_to_string(&output_path)?;
+    println!("{}", generated_content);
+
     // 8h - 2h = 6h
     assert!(generated_content.contains("Total hours: 6"));
     // (6h * 100) + 50 - 10 = 600 + 40 = 640
     assert!(generated_content.contains("Total amount: 640"));
+
+    assert!(generated_content.contains("Total worked: 6"));
+    assert!(generated_content.contains("Total counted: 6 600"));
+    assert!(generated_content.contains("Total billed: 6 600"));
+
+    assert!(generated_content.contains("Fixed fees: 50 -10"));
+    assert!(generated_content.contains("Overage: 0 0"));
 
     Ok(())
 }
@@ -229,6 +281,8 @@ output = "custom_invoice.txt"
         &[],
     );
     let generated_content = std::fs::read_to_string(&default_output_path)?;
+    println!("{}", generated_content);
+
     assert!(generated_content.contains("Default: 50"));
 
     // Test custom generator
