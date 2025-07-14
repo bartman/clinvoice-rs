@@ -20,11 +20,12 @@ impl Config {
 
     fn find_config_path(config_file: Option<&str>, data_directory: Option<&str>) -> Result<PathBuf, std::io::Error> {
         if let Some(path) = config_file {
-            tracing::trace!("user specified config_file={}", path);
             let path = PathBuf::from(path);
             if path.exists() {
+                tracing::trace!("user specified config_file={} exists", path.display());
                 return Ok(path.canonicalize()?);
             } else {
+                tracing::trace!("user specified config_file={} does not exist", path.display());
                 return Err(std::io::Error::new(std::io::ErrorKind::NotFound, "Specified config file does not exist"));
             }
         }
@@ -49,6 +50,7 @@ impl Config {
             }
         }
 
+        tracing::trace!("configuration not found");
         Err(std::io::Error::new(std::io::ErrorKind::NotFound, "No config file found in searched locations"))
     }
 
