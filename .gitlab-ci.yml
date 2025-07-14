@@ -28,6 +28,8 @@ unit-test-deb12:
   needs:
     - job: build-deb12
       artifacts: true
+  variables:
+      RUST_LOG: trace
   script:
     - cargo test --verbose
 
@@ -43,6 +45,8 @@ unit-test-deb13:
   needs:
     - job: build-deb13
       artifacts: true
+  variables:
+      RUST_LOG: trace
   script:
     - cargo test --verbose
 
