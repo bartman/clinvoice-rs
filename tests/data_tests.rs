@@ -31,6 +31,34 @@ $50 = Fixed Fee
 }
 
 #[test]
+fn test_time_data_new_with_comments() -> Result<(), Box<dyn std::error::Error>> {
+    let dir = tempdir()?;
+    let file_content = r#"
+# This is a full line comment
+2025.01.01
+// This is also a full line comment
+8h = Project Alpha # This is an inline comment, should not be ignored
+-2h = Discount // This is also an inline comment
+    # indented comment
+    // indented comment
+"#;
+    std::fs::write(dir.path().join("test.cli"), file_content)?;
+
+    let selector = DateSelector::new();
+    let time_data = TimeData::new(dir.path().to_str().unwrap(), &selector)?;
+
+    assert_eq!(time_data.entries.len(), 1);
+
+    let date = NaiveDate::from_ymd_opt(2025, 1, 1).unwrap();
+    let entries = time_data.entries.get(&date).unwrap();
+    assert_eq!(entries.len(), 2);
+    assert!(matches!(entries[0], Entry::Time(h, _) if h == 8.0));
+    assert!(matches!(entries[1], Entry::Time(h, _) if h == -2.0));
+
+    Ok(())
+}
+
+#[test]
 fn test_time_data_new_all_files() -> Result<(), Box<dyn std::error::Error>> {
     let dir = tempdir()?;
     create_test_cli_files(dir.path())?;

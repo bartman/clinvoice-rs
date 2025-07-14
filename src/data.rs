@@ -63,7 +63,7 @@ impl TimeData {
 
                 for (line_number, line) in content.lines().enumerate() {
                     let line = line.trim();
-                    if line.is_empty() {
+                    if line.is_empty() || line.starts_with('#') || line.starts_with("//") {
                         continue;
                     }
 

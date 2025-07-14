@@ -47,6 +47,18 @@ Lines starting with `*` or `-` are treated as notes and are ignored in calculati
   - Another note.
 ```
 
+### Comments
+
+Lines starting with `#` or `//` (with optional leading whitespace) are treated as full-line comments and are ignored by the parser. This is useful for adding notes to your timesheet files that you don't want to appear on the invoice.
+
+```
+# This is a full-line comment and will be ignored.
+  // This is also a comment and will be ignored.
+
+2025.07.13
+  8h = Project A # This is NOT a comment and will be part of the description.
+```
+
 ## Configuration
 
 It expected that you have a directory of `.cli` files for each client, along with a `clinvoice.toml` configuration file, and a template used to generate the output.
