@@ -1,7 +1,7 @@
 use crate::config::Config;
 use crate::data::{DateSelector, TimeData};
 use crate::latex::latex_escape;
-use crate::parse::parse_date_arg;
+
 use crate::color::*;
 use chrono::{Local, NaiveDate};
 use colored::Color;
@@ -142,16 +142,10 @@ pub fn run(
     let path = Path::new(directory).join(template_path.clone());
     template_path = path.to_str().unwrap().to_string();
 
-    let mut selector = DateSelector::new();
-    for date_arg in dates {
-        match parse_date_arg(date_arg) {
-            Ok(range) => selector.add_range(range),
-            Err(err) => {
-                tracing::error!("Invalid date argument: {} - {}", date_arg, err);
-                std::process::exit(1);
-            }
-        }
-    }
+    let selector = DateSelector::from_dates(dates).unwrap_or_else(|err| {
+        tracing::error!("{}", err);
+        std::process::exit(1);
+    });
 
     let time_data = TimeData::new(directory, &selector).expect("Failed to load data");
 

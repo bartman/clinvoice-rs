@@ -1,5 +1,5 @@
 use crate::data::{TimeData, DateSelector};
-use crate::parse::{parse_date_arg};
+
 use crate::color::*;
 use chrono::Datelike;
 use std::collections::HashMap;
@@ -21,16 +21,10 @@ pub fn run(
 ) {
     let directory = directory_option.as_deref().unwrap_or(".");
 
-    let mut selector = DateSelector::new();
-    for date_arg in dates {
-        match parse_date_arg(date_arg) {
-            Ok(range) => selector.add_range(range),
-            Err(err) => {
-                tracing::error!("Invalid date argument: {} - {}", date_arg, err);
-                std::process::exit(1);
-            }
-        }
-    }
+    let selector = DateSelector::from_dates(dates).unwrap_or_else(|err| {
+        tracing::error!("{}", err);
+        std::process::exit(1);
+    });
 
     let time_data = TimeData::new(directory, &selector).expect("Failed to load data");
 

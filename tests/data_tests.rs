@@ -134,3 +134,25 @@ fn test_time_data_new_non_existent_directory() {
     assert!(result.is_err());
     assert_eq!(result.unwrap_err().kind(), std::io::ErrorKind::NotFound);
 }
+
+#[test]
+fn test_date_selector_from_dates() {
+    // Test with valid date arguments
+    let selector = DateSelector::from_dates(&["2025".to_string(), "2024.01".to_string(), "2023.01.01".to_string()]).unwrap();
+    assert_eq!(selector.ranges.len(), 3);
+    assert_eq!(selector.ranges[0].start, NaiveDate::from_ymd_opt(2025, 1, 1).unwrap());
+    assert_eq!(selector.ranges[0].end, NaiveDate::from_ymd_opt(2025, 12, 31).unwrap());
+    assert_eq!(selector.ranges[1].start, NaiveDate::from_ymd_opt(2024, 1, 1).unwrap());
+    assert_eq!(selector.ranges[1].end, NaiveDate::from_ymd_opt(2024, 1, 31).unwrap());
+    assert_eq!(selector.ranges[2].start, NaiveDate::from_ymd_opt(2023, 1, 1).unwrap());
+    assert_eq!(selector.ranges[2].end, NaiveDate::from_ymd_opt(2023, 1, 1).unwrap());
+
+    // Test with an invalid date argument
+    let result = DateSelector::from_dates(&["invalid_date".to_string()]);
+    assert!(result.is_err());
+    assert!(result.unwrap_err().contains("Invalid date argument"));
+
+    // Test with empty dates
+    let selector = DateSelector::from_dates(&[]).unwrap();
+    assert_eq!(selector.ranges.len(), 0);
+}

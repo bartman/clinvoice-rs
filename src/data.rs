@@ -29,6 +29,19 @@ impl DateSelector {
         DateSelector { ranges: Vec::new() }
     }
 
+    pub fn from_dates(dates: &[String]) -> Result<Self, String> {
+        let mut selector = DateSelector::new();
+        for date_arg in dates {
+            match crate::parse::parse_date_arg(date_arg) {
+                Ok(range) => selector.add_range(range),
+                Err(err) => {
+                    return Err(format!("Invalid date argument: {} - {}", date_arg, err));
+                }
+            }
+        }
+        Ok(selector)
+    }
+
     pub fn add_range(&mut self, range: DateRange) {
         self.ranges.push(range);
     }
