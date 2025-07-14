@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand};
 use clap::CommandFactory;
-use crate::logger::TraceLevel;
+use crate::tracing::TraceLevel;
 use crate::color::*;
 use crate::log::LogFormat;
 
@@ -50,13 +50,13 @@ mod data;
 mod generate;
 mod latex;
 mod log;
-mod logger;
+mod tracing;
 mod parse;
 
 fn main() {
     let cli = Cli::parse();
     color::init(&cli.color);
-    logger::init(&cli.log_level, &cli.log_file);
+    tracing::init(&cli.log_level, &cli.log_file);
     match cli.command {
         None => {
             Cli::command().print_long_help().unwrap();

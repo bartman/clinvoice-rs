@@ -4,5 +4,5 @@ pub mod data;
 pub mod generate;
 pub mod latex;
 pub mod log;
-pub mod logger;
+pub mod tracing;
 pub mod parse;
