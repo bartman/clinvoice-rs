@@ -1,5 +1,8 @@
 use tracing::Level;
 
+/// Escapes a given string for safe inclusion in LaTeX documents.
+///
+/// This function replaces special LaTeX characters with their corresponding escape sequences.
 pub fn latex_escape(initial: &str) -> String {
     let mut escaped = String::new();
     for c in initial.chars() {

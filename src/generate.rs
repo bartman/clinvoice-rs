@@ -15,21 +15,28 @@ use std::path::Path;
 use std::process::{Command, Stdio};
 use tera::{Context, Tera, to_value, try_get_value, Value};
 
+/// A builder for creating Tera contexts, allowing for insertion of serializable data
+/// and conditional escaping based on the output mode (e.g., LaTeX).
 pub struct TeraContextBuilder {
     data: HashMap<String, Value>,
 }
 
 impl TeraContextBuilder {
+    /// Creates a new, empty `TeraContextBuilder`.
     pub fn new() -> Self {
         TeraContextBuilder {
             data: HashMap::new(),
         }
     }
 
+    /// Inserts a serializable value into the context builder.
+    /// The value is converted to a `tera::Value`.
     pub fn insert<T: Serialize + ?Sized>(&mut self, key: &str, value: &T) {
         self.data.insert(key.to_string(), to_value(value).unwrap());
     }
 
+    /// Builds the Tera context from the accumulated data.
+    /// Applies LaTeX escaping to string values if `escape_mode` is "latex".
     pub fn build(&self, escape_mode: &str) -> Context {
         let mut context = Context::new();
         for (key, value) in &self.data {
@@ -94,24 +101,38 @@ fn justify_string(value: &Value, args: &HashMap<String, Value>, alignment: &str)
     Ok(to_value(result).unwrap())
 }
 
+// Tera filter for left justification.
 fn left_filter(value: &Value, args: &HashMap<String, Value>) -> tera::Result<Value> {
     justify_string(value, args, "left")
 }
 
+// Tera filter for right justification.
 fn right_filter(value: &Value, args: &HashMap<String, Value>) -> tera::Result<Value> {
     justify_string(value, args, "right")
 }
 
+// Tera filter for center justification.
 fn center_filter(value: &Value, args: &HashMap<String, Value>) -> tera::Result<Value> {
     justify_string(value, args, "center")
 }
 
+// Tera filter to format numbers to a specified decimal precision.
 fn decimal_filter(value: &Value, args: &HashMap<String, Value>) -> tera::Result<Value> {
     let num = try_get_value!("decimal_filter", "value", f64, value);
     let precision = try_get_value!("decimal_filter", "precision", usize, args["precision"]);
     Ok(to_value(format!("{:.precision$}", num, precision = precision)).unwrap())
 }
 
+/// Runs the invoice generation process.
+///
+/// This function orchestrates the entire invoice generation, including:
+/// - Loading configuration.
+/// - Managing invoice sequencing.
+/// - Loading time data.
+/// - Building the Tera context with all necessary data.
+/// - Rendering the invoice template.
+/// - Writing the output file.
+/// - Executing a build command if specified in the configuration.
 pub fn run(
     output_option: Option<String>,
     generator_option: &Option<String>,
@@ -372,6 +393,7 @@ pub fn run(
     }
 }
 
+// Executes an external build command and streams its output.
 fn process_builder(builder : String) {
     tracing::info!("Build with {}", builder.to_string());
 

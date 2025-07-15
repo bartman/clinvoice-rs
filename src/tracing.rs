@@ -3,6 +3,7 @@ use clap::{ValueEnum};
 use std::fs::File;
 use crate::color;
 
+/// Defines the available tracing levels for logging.
 #[derive(ValueEnum, Clone, Debug)]
 pub enum TraceLevel {
     Error,
@@ -13,6 +14,7 @@ pub enum TraceLevel {
 }
 
 impl TraceLevel {
+    /// Returns the string representation of the trace level.
     pub fn as_str(&self) -> &'static str {
         match self {
             TraceLevel::Error => "error",
@@ -24,6 +26,9 @@ impl TraceLevel {
     }
 }
 
+/// Initializes the tracing subscriber for logging.
+///
+/// Configures the logging level and output destination (stderr or a file).
 pub fn init(trace_level : &TraceLevel, trace_output : &String) {
     let filter = EnvFilter::try_from_default_env()
         .unwrap_or_else(|_| EnvFilter::new(trace_level.as_str()));

@@ -2,13 +2,15 @@ use std::sync::OnceLock;
 use clap::ValueEnum;
 use colored::*;
 
+/// Options for controlling terminal color output.
 #[derive(ValueEnum, Clone, Debug)]
 pub enum ColorOption {
-    Always,
-    Auto,
-    Never,
+    Always, // Always enable color output.
+    Auto,   // Automatically enable color output if the terminal supports it.
+    Never,  // Never enable color output.
 }
 
+/// Indicates whether color output is enabled for stdout and stderr.
 #[derive(Clone, Debug)]
 pub struct ColorEnable {
     pub stdout : bool,
@@ -16,6 +18,7 @@ pub struct ColorEnable {
 }
 
 impl ColorEnable {
+    /// Creates a new `ColorEnable` instance based on the provided `ColorOption`.
     pub fn new(color_option: &ColorOption) -> Self {
         let use_color_stdout = match color_option {
             ColorOption::Always => true,
@@ -35,17 +38,29 @@ impl ColorEnable {
 
 static G_COLOR_ENABLED: OnceLock<ColorEnable> = OnceLock::new();
 
+/// Initializes the global color enable state.
+///
+/// This function should be called once at the application startup.
 pub fn init(color_option: &ColorOption) {
     G_COLOR_ENABLED.set(ColorEnable::new(color_option)).expect("init called multiple times");
 }
 
+/// Returns the current color enable state.
+///
+/// Panics if `init` has not been called.
 pub fn color_enabled() -> ColorEnable {
     G_COLOR_ENABLED.get().expect("init not called").clone()
 }
 
+/// Trait for dynamically applying colors to strings based on output stream.
 pub trait DynamicColorize {
+    /// Applies a color to the string.
     fn colored(&self, color: Color) -> ColoredString;
+
+    /// Applies a color to the string if stdout has color enabled.
     fn out_colored(&self, color: Color) -> ColoredString;
+
+    /// Applies a color to the string if stderr has color enabled.
     fn err_colored(&self, color: Color) -> ColoredString;
 }
 

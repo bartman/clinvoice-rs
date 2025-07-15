@@ -1,6 +1,9 @@
 use crate::data::{DateRange, Entry};
 use chrono::{NaiveDate, NaiveTime};
 
+/// Parses a date string from a line using various formats.
+///
+/// Supported formats: "YYYY.MM.DD", "YYYYMMDD", "YYYY-MM-DD".
 pub fn parse_date(line: &str) -> Option<NaiveDate> {
     NaiveDate::parse_from_str(line, "%Y.%m.%d")
         .or_else(|_| NaiveDate::parse_from_str(line, "%Y%m%d"))
@@ -8,6 +11,7 @@ pub fn parse_date(line: &str) -> Option<NaiveDate> {
         .ok()
 }
 
+/// Calculates the last day of a given month and year.
 pub fn last_day_of_month(year: i32, month: u32) -> NaiveDate {
     if month == 12 {
         NaiveDate::from_ymd_opt(year, 12, 31).unwrap()
@@ -16,6 +20,12 @@ pub fn last_day_of_month(year: i32, month: u32) -> NaiveDate {
     }
 }
 
+/// Parses a date specifier string into a `DateRange`.
+///
+/// Supported specifiers:
+/// - "YYYY": Represents the entire year.
+/// - "YYYY.MM": Represents the entire month within a year.
+/// - "YYYY.MM.DD": Represents a single day.
 pub fn parse_specifier_to_range(spec: &str) -> Result<DateRange, String> {
     let parts: Vec<&str> = spec.split('.').collect();
     match parts.len() {
@@ -46,6 +56,9 @@ pub fn parse_specifier_to_range(spec: &str) -> Result<DateRange, String> {
     }
 }
 
+/// Parses a date argument string, which can be a single date specifier or a date range.
+///
+/// A date range is specified as "START_SPECIFIER-END_SPECIFIER".
 pub fn parse_date_arg(arg: &str) -> Result<DateRange, String> {
     if let Some((start_spec, end_spec)) = arg.split_once('-') {
         let start_range = parse_specifier_to_range(start_spec)?;
@@ -61,6 +74,11 @@ pub fn parse_date_arg(arg: &str) -> Result<DateRange, String> {
     }
 }
 
+/// Parses a time specification string into a floating-point number of hours.
+///
+/// Supported formats:
+/// - "Xh": X hours (e.g., "8h", "0.5h").
+/// - "HH:MM-HH:MM": A time range (e.g., "09:00-17:00", "9-17").
 pub fn parse_time_spec(time_spec: &str) -> Result<f32, String> {
     let time_spec = time_spec.trim();
     if time_spec.ends_with('h') {
@@ -103,6 +121,9 @@ pub fn parse_time_spec(time_spec: &str) -> Result<f32, String> {
     }
 }
 
+/// Parses a single line from a .cli file into an `Entry`.
+///
+/// Lines can represent time entries, fixed costs, or notes.
 pub fn parse_line(line: &str) -> Result<Entry, String> {
     let line = line.trim();
     if line.starts_with('-') || line.starts_with('*') {

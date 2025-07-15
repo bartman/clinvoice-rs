@@ -4,12 +4,26 @@ use toml::Value;
 use std::fs;
 use std::env;
 
+/// Represents the application's configuration loaded from a TOML file.
 #[allow(dead_code)]
 pub struct Config {
     value: Value,
 }
 
 impl Config {
+    /// Creates a new `Config` instance by loading and parsing a TOML configuration file.
+    ///
+    /// The function attempts to find the configuration file based on the provided `config_file`
+    /// path or by searching predefined locations relative to `data_directory` and system defaults.
+    ///
+    /// # Arguments
+    ///
+    /// * `config_file` - An optional path to a specific configuration file.
+    /// * `data_directory` - An optional base directory to search for `clinvoice.toml`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an `std::io::Error` if the file cannot be found, read, or if the TOML content is invalid.
     pub fn new(config_file: Option<&str>, data_directory: Option<&str>) -> Result<Self, std::io::Error> {
         let config_path = Self::find_config_path(config_file, data_directory)?;
         let content = fs::read_to_string(&config_path)?;
@@ -18,6 +32,7 @@ impl Config {
         Ok(Config { value })
     }
 
+    // Attempts to find the configuration file based on provided path or predefined locations.
     fn find_config_path(config_file: Option<&str>, data_directory: Option<&str>) -> Result<PathBuf, std::io::Error> {
         if let Some(path) = config_file {
             let path = PathBuf::from(path);
@@ -54,11 +69,13 @@ impl Config {
         Err(std::io::Error::new(std::io::ErrorKind::NotFound, "No config file found in searched locations"))
     }
 
+    /// Checks if a key exists in the configuration.
     #[allow(dead_code)]
     pub fn has(&self, key: &str) -> bool {
         self.get_value(key).is_some()
     }
 
+    /// Returns the type of the value associated with a key, if it exists.
     #[allow(dead_code)]
     pub fn kind(&self, key: &str) -> Option<&'static str> {
         self.get_value(key).map(|v| match v {
@@ -72,11 +89,13 @@ impl Config {
         })
     }
 
+    /// Retrieves a raw `toml::Value` for a given key.
     #[allow(dead_code)]
     pub fn get(&self, key: &str) -> Option<&Value> {
         self.get_value(key)
     }
 
+    /// Retrieves a value for a given key, with a default fallback if the key is not found or conversion fails.
     #[allow(dead_code)]
     pub fn get_with_default<T>(&self, key: &str, default: T) -> T
     where
@@ -87,6 +106,7 @@ impl Config {
             .unwrap_or(default)
     }
 
+    /// Retrieves a string value for a given key.
     #[allow(dead_code)]
     pub fn get_string(&self, key: &str) -> Option<String> {
         self.get_value(key)
@@ -94,6 +114,7 @@ impl Config {
             .map(|s| s.to_string())
     }
 
+    /// Retrieves an `f64` value for a given key, converting from integer if necessary.
     #[allow(dead_code)]
     pub fn get_f64(&self, key: &str) -> Option<f64> {
         self.get_value(key).and_then(|v| {
@@ -107,21 +128,25 @@ impl Config {
         })
     }
 
+    /// Retrieves an `i64` value for a given key.
     #[allow(dead_code)]
     pub fn get_i64(&self, key: &str) -> Option<i64> {
         self.get_value(key).and_then(|v| v.as_integer())
     }
 
+    /// Retrieves a table (map) value for a given key.
     #[allow(dead_code)]
     pub fn get_table(&self, key: &str) -> Option<&toml::map::Map<String, Value>> {
         self.get_value(key).and_then(|v| v.as_table())
     }
 
+    /// Returns the entire configuration as a TOML table.
     #[allow(dead_code)]
     pub fn as_table(&self) -> &toml::map::Map<String, Value> {
         self.value.as_table().unwrap()
     }
 
+    /// Flattens the configuration into a HashMap with dot-separated keys.
     #[allow(dead_code)]
     pub fn get_flattened_values(&self, key_separator: &str) -> HashMap<String, Value> {
         let mut map = HashMap::new();
@@ -131,6 +156,7 @@ impl Config {
         map
     }
 
+    // Recursively flattens a TOML table into a HashMap.
     fn flatten_table_recursive(&self, prefix: &str, table: &toml::map::Map<String, Value>, map: &mut HashMap<String, Value>, key_separator: &str) {
         for (key, value) in table {
             let new_key = if prefix.is_empty() {
@@ -147,7 +173,7 @@ impl Config {
         }
     }
 
-    #[allow(dead_code)]
+    // Retrieves a value from the configuration using a dot-separated key.
     fn get_value(&self, key: &str) -> Option<&Value> {
         let mut current = &self.value;
         for part in key.split('.') {
@@ -162,26 +188,31 @@ impl Config {
     }
 }
 
+/// A trait for converting a `toml::Value` into another type.
 #[allow(dead_code)]
 pub trait FromValue {
+    /// Attempts to convert a `toml::Value` into `Self`.
     fn from_value(value: &Value) -> Option<Self>
     where
         Self: Sized;
 }
 
 impl FromValue for String {
+    /// Converts a `toml::Value` to a `String`.
     fn from_value(value: &Value) -> Option<Self> {
         value.as_str().map(|s| s.to_string())
     }
 }
 
 impl FromValue for i64 {
+    /// Converts a `toml::Value` to an `i64`.
     fn from_value(value: &Value) -> Option<Self> {
         value.as_integer()
     }
 }
 
 impl FromValue for f64 {
+    /// Converts a `toml::Value` to an `f64`.
     fn from_value(value: &Value) -> Option<Self> {
         value.as_float()
     }

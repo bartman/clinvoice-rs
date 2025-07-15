@@ -6,6 +6,7 @@ use std::collections::HashMap;
 use colored::Color;
 use clap::ValueEnum;
 
+/// Defines the available log output formats.
 #[derive(ValueEnum, Clone, Debug)]
 pub enum LogFormat {
     Full,
@@ -14,6 +15,10 @@ pub enum LogFormat {
     Year,
 }
 
+/// Runs the logging process, displaying time data in various formats.
+///
+/// This function reads time data, filters it by dates, and then formats
+/// and prints it to the console based on the specified `LogFormat`.
 pub fn run(
     format: LogFormat,
     directory_option: &Option<String>,

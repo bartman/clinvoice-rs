@@ -4,6 +4,7 @@ use crate::tracing::TraceLevel;
 use crate::color::*;
 use crate::log::LogFormat;
 
+/// Command-line interface arguments for the clinvoice application.
 #[derive(Parser)]
 struct Cli {
     #[clap(short = 'l', long, help = "select log level (error, warn, [info], debug, trace)", default_value = "info")]
@@ -20,8 +21,11 @@ struct Cli {
     command: Option<Command>,
 }
 
+/// Subcommands for the clinvoice application.
 #[derive(Subcommand)]
 enum Command {
+
+    /// Display existing entries
     #[clap(about = "Display existing entries")]
     Log {
         #[clap(short, long, default_value = "day")]
@@ -29,6 +33,8 @@ enum Command {
         #[clap(value_parser)]
         dates: Vec<String>,
     },
+
+    /// Generate an invoice
     #[clap(about = "Generate an invoice")]
     Generate {
         #[clap(short, long)]
@@ -54,6 +60,7 @@ mod log;
 mod parse;
 mod tracing;
 
+/// Main entry point of the clinvoice application.
 fn main() {
     let cli = Cli::parse();
     color::init(&cli.color);

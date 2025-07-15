@@ -1,3 +1,5 @@
+# this file exists for lazy fingers
+
 Q = $(if ${V},,@)
 
 all:

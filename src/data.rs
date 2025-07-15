@@ -6,6 +6,7 @@ use std::fs;
 use std::path::Path;
 use colored::Color;
 
+/// Represents a single entry in a timesheet, which can be time worked, a fixed cost, or a note.
 #[derive(Debug)]
 pub enum Entry {
     Time(f32, String),
@@ -13,22 +14,36 @@ pub enum Entry {
     Note(String),
 }
 
+/// Represents a range of dates, inclusive of start and end dates.
 #[derive(Debug)]
 pub struct DateRange {
     pub start: NaiveDate,
     pub end: NaiveDate,
 }
 
+/// Selects and filters dates based on specified ranges.
 #[derive(Debug)]
 pub struct DateSelector {
     pub ranges: Vec<DateRange>,
 }
 
 impl DateSelector {
+    /// Creates a new, empty `DateSelector`.
     pub fn new() -> Self {
         DateSelector { ranges: Vec::new() }
     }
 
+    /// Creates a `DateSelector` from a list of date argument strings.
+    ///
+    /// Each string can represent a single date or a date range.
+    ///
+    /// # Arguments
+    ///
+    /// * `dates` - A slice of strings, where each string is a date argument.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `String` error if any date argument is invalid.
     pub fn from_dates(dates: &[String]) -> Result<Self, String> {
         let mut selector = DateSelector::new();
         for date_arg in dates {
@@ -42,10 +57,14 @@ impl DateSelector {
         Ok(selector)
     }
 
+    /// Adds a `DateRange` to the selector.
     pub fn add_range(&mut self, range: DateRange) {
         self.ranges.push(range);
     }
 
+    /// Checks if a given date falls within any of the selected date ranges.
+    ///
+    /// If no ranges are specified, all dates are considered selected.
     pub fn selected(&self, date: &NaiveDate) -> bool {
         if self.ranges.is_empty() {
             true
@@ -55,12 +74,25 @@ impl DateSelector {
     }
 }
 
+/// Stores time entries organized by date.
 #[derive(Debug)]
 pub struct TimeData {
     pub entries: HashMap<NaiveDate, Vec<Entry>>,
 }
 
 impl TimeData {
+    /// Creates a new `TimeData` instance by reading and parsing .cli files from a directory.
+    ///
+    /// Only entries within the dates specified by the `DateSelector` are included.
+    ///
+    /// # Arguments
+    ///
+    /// * `dir_path` - The path to the directory containing .cli files.
+    /// * `selector` - A `DateSelector` to filter entries by date.
+    ///
+    /// # Errors
+    ///
+    /// Returns an `std::io::Error` if the directory cannot be read or files cannot be parsed.
     pub fn new(dir_path: &str, selector: &DateSelector) -> Result<Self, std::io::Error> {
         let mut entries = HashMap::new();
         let path = Path::new(dir_path);

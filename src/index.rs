@@ -7,6 +7,10 @@ use fs2::FileExt;
 use colored::Color;
 use crate::color::DynamicColorize;
 
+/// Manages invoice sequence numbers and their associated dates.
+///
+/// This struct handles reading from and writing to an index file, ensuring
+/// that sequence numbers are unique and persistent across application runs.
 pub struct Index {
     file_path: PathBuf,
     sequences: HashMap<u32, Vec<String>>,
@@ -14,6 +18,17 @@ pub struct Index {
 }
 
 impl Index {
+    /// Creates a new `Index` instance, loading existing sequences from the specified file.
+    ///
+    /// It acquires an exclusive lock on the index file to prevent concurrent access.
+    ///
+    /// # Arguments
+    ///
+    /// * `file_path` - The path to the index file.
+    ///
+    /// # Errors
+    ///
+    /// Returns an `io::Error` if the file cannot be opened, locked, or read.
     pub fn new(file_path: &Path) -> Result<Self, io::Error> {
         let file = OpenOptions::new()
             .read(true)
@@ -33,6 +48,7 @@ impl Index {
         Ok(index)
     }
 
+    // Loads sequence numbers and their associated dates from the index file.
     fn load(&mut self) -> Result<(), io::Error> {
         self.sequences.clear();
         let file = BufReader::new(File::open(&self.file_path)?);
@@ -53,6 +69,13 @@ impl Index {
         Ok(())
     }
 
+    /// Saves the current state of sequence numbers and dates to the index file.
+    ///
+    /// It writes to a temporary file first and then renames it to ensure data integrity.
+    ///
+    /// # Errors
+    ///
+    /// Returns an `io::Error` if the file cannot be written to or renamed.
     pub fn save(&self) -> Result<(), io::Error> {
         let temp_path = self.file_path.with_extension("tmp");
         let mut temp_file = File::create(&temp_path)?;
@@ -71,11 +94,33 @@ impl Index {
         Ok(())
     }
 
+    /// Adds a new sequence number with associated dates to the index.
+    ///
+    /// # Arguments
+    ///
+    /// * `sequence` - The sequence number to add.
+    /// * `dates` - A slice of date strings associated with the sequence.
+    ///
+    /// # Returns
+    ///
+    /// The added sequence number.
     pub fn add_sequence(&mut self, sequence: u32, dates: &[String]) -> u32 {
         self.sequences.insert(sequence, dates.to_vec());
         sequence
     }
 
+    /// Finds an existing sequence number for a given set of dates, or generates a new one.
+    ///
+    /// If a matching set of dates is found, its sequence number is returned.
+    /// Otherwise, a new sequence number (max existing + 1) is generated and associated with the dates.
+    ///
+    /// # Arguments
+    ///
+    /// * `dates` - A slice of date strings to search for or associate with a new sequence.
+    ///
+    /// # Returns
+    ///
+    /// The found or newly generated sequence number.
     pub fn find_sequence(&mut self, dates: &[String]) -> u32 {
         let mut sorted_input_dates = dates.to_vec();
         sorted_input_dates.sort();
@@ -96,6 +141,7 @@ impl Index {
 }
 
 impl Drop for Index {
+    /// Releases the exclusive lock on the index file when the `Index` instance is dropped.
     fn drop(&mut self) {
       if let Err(e) = fs2::FileExt::unlock(&self.lock_file) {
           tracing::error!("Failed to unlock index file: {}",
