@@ -1,0 +1,7 @@
+[contract]
+hourly_rate = 100.0
+
+[generator.latex]
+template = "template.tex"
+output = "invoice.tex"
+escape = "latex"

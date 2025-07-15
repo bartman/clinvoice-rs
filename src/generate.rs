@@ -318,8 +318,12 @@ pub fn run(
                 .add_raw_template("output", &output_file_template_string)
                 .unwrap();
 
+            tracing::trace!("output template: {}", output_file_template_string);
+
             let rendered = output_file_tera.render("output", &context_builder.build("none"))
                 .expect("Failed to render output filename");
+
+            tracing::trace!("output filename: {}", rendered);
 
             let path = Path::new(directory).join(rendered.clone());
             path.to_str().unwrap().to_string()

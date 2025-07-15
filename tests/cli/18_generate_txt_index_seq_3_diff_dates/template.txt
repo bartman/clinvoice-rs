@@ -1,0 +1,2 @@
+Invoice Sequence: {{ sequence }}
+Total hours: {{ total_hours }}

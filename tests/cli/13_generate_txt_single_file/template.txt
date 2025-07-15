@@ -1,0 +1,2 @@
+Total hours: {{ total_hours }}
+Total amount: {{ total_amount }}

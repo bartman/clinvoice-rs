@@ -1,0 +1,6 @@
+[contract]
+hourly_rate = 100.0
+
+[generator.txt]
+template = "template.txt"
+output = "invoice.txt"

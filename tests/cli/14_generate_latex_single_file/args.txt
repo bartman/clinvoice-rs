@@ -1,0 +1,1 @@
+generate -g latex -o invoice.tex

@@ -1,0 +1,1 @@
+generate -g txt -o invoice.txt

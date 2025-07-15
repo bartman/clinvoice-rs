@@ -1,0 +1,9 @@
+[contract]
+hourly_rate = 100.0
+
+[generator.txt]
+template = "template.txt"
+output = "invoice-{{sequence}}.txt"
+
+[index]
+file = "test_index_seq"
