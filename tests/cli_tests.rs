@@ -6,9 +6,30 @@ use regex::Regex;
 use clinvoice::color::*;
 use colored::Color;
 
+fn copy_files_to_directory(src_dir : &Path, dst_dir : &Path) -> std::io::Result<()> {
+    for entry in fs::read_dir(&src_dir)? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.is_file() {
+            let file_name = path.file_name().unwrap();
+            let dst_path = dst_dir.join(file_name);
+            fs::copy(&path, &dst_path)?;
+        }
+    }
+    Ok(())
+}
+
 fn run_one_cli_test(test_case_dir : PathBuf) {
     let test_name = test_case_dir.file_name().unwrap().to_str().unwrap();
     println!("Running test: {}", test_name.colored(Color::BrightBlue));
+
+    let temp_dir = tempfile::tempdir().expect("Failed to create temporary directory");
+    let temp_dir_path = temp_dir.path();
+
+    println!("  test_case_dir: {:?}", test_case_dir);
+    println!("  temp_dir_path:      {:?}", temp_dir_path);
+
+    copy_files_to_directory(&test_case_dir, temp_dir_path).expect("Failed to copy files");
 
     let args_path = test_case_dir.join("args.txt");
     let args_str = fs::read_to_string(&args_path).unwrap();
@@ -20,10 +41,10 @@ fn run_one_cli_test(test_case_dir : PathBuf) {
         .arg("--color")
         .arg("never")
         .arg("--config")
-        .arg(test_case_dir.join("clinvoice.toml"))
+        .arg(temp_dir_path.join("clinvoice.toml"))
         .arg("--directory")
         .arg(".") // Set directory to current working directory
-        .current_dir(&test_case_dir) // Set working directory for the command
+        .current_dir(&temp_dir_path) // Set working directory for the command
         .args(&args);
 
     let output = command.output().expect("Failed to execute command");
@@ -45,15 +66,14 @@ fn run_one_cli_test(test_case_dir : PathBuf) {
     }
 
     if is_generate_test {
-        let generated_file_path = test_case_dir.join(Path::new(&output_file_name_from_cli.unwrap()).file_name().unwrap());
+        let generated_file_path = temp_dir_path.join(Path::new(&output_file_name_from_cli.unwrap()).file_name().unwrap());
         let expected_output_path = test_case_dir.join("expected.output");
 
-        println!("  test_case_dir: {:?}", test_case_dir);
         println!("  generated_file_path: {:?}", generated_file_path);
         println!("  expected_output_path: {:?}", expected_output_path);
 
-        let ls_output = Command::new("ls").arg("-l").arg(&test_case_dir).output().expect("Failed to run ls");
-        println!("  ls -l {}:\n{}", test_case_dir.display(), String::from_utf8_lossy(&ls_output.stdout));
+        let ls_output = Command::new("ls").arg("-l").arg(&temp_dir_path).output().expect("Failed to run ls");
+        println!("  ls -l {}:\n{}", temp_dir_path.display(), String::from_utf8_lossy(&ls_output.stdout));
 
         assert!(generated_file_path.exists(), "Generated file does not exist: {:?}", generated_file_path);
 
