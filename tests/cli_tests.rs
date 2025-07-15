@@ -5,6 +5,7 @@ use std::process::Command;
 use regex::Regex;
 use clinvoice::color::*;
 use colored::Color;
+use rstest::rstest;
 
 fn copy_files_to_directory(src_dir : &Path, dst_dir : &Path) -> std::io::Result<()> {
     for entry in fs::read_dir(&src_dir)? {
@@ -92,16 +93,32 @@ fn run_one_cli_test(test_case_dir : PathBuf) {
     println!("Successfully completed: {}", test_name.colored(Color::BrightGreen));
 }
 
-#[test]
-fn run_cli_tests() {
+#[rstest]
+#[case("01_log_year_all")]
+#[case("02_log_year_2010")]
+#[case("03_log_year_2011")]
+#[case("04_log_month_all")]
+#[case("05_log_month_2010-11")]
+#[case("06_log_month_2010-12_2011-01")]
+#[case("07_log_day_all")]
+#[case("08_log_day_2010-11-01")]
+#[case("09_log_day_2010-11-01_2010-12-01")]
+#[case("10_log_full_all")]
+#[case("11_log_full_2010-11-01")]
+#[case("12_log_full_2010-11-01_2010-12-01")]
+#[case("13_generate_txt_single_file")]
+#[case("14_generate_latex_single_file")]
+#[case("15_generate_txt_multiple_input_files")]
+#[case("16_generate_txt_index_seq_1")]
+#[case("17_generate_txt_index_seq_2_same_dates")]
+#[case("18_generate_txt_index_seq_3_diff_dates")]
+
+fn cli_test_case(#[case] test_name : &str) {
     let test_dir_base = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests").join("cli");
 
-    for entry in fs::read_dir(&test_dir_base).unwrap() {
-        let entry = entry.unwrap();
-        let test_case_dir = entry.path();
-
-        if test_case_dir.is_dir() {
-            run_one_cli_test(test_case_dir);
-        }
+    let test_case_dir = test_dir_base.join(test_name);
+    if test_case_dir.is_dir() {
+        run_one_cli_test(test_case_dir);
     }
 }
+
