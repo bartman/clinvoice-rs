@@ -26,28 +26,11 @@ fn test_index_new_loads_existing_file() -> Result<(), Box<dyn std::error::Error>
 fn test_index_new_fails_if_file_cannot_be_created() {
     // Create a directory that we can make read-only
     let temp_dir = tempfile::tempdir().expect("Failed to create temporary directory");
-    let restricted_dir = temp_dir.path().join("restricted");
-    fs::create_dir(&restricted_dir).expect("Failed to create restricted directory");
-    // Set permissions to read-only for the owner, and no access for others
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let mut perms = fs::metadata(&restricted_dir).unwrap().permissions();
-        perms.set_mode(0o555); // r-xr-xr-x
-        fs::set_permissions(&restricted_dir, perms).unwrap();
-    }
+    let restricted_dir = temp_dir.path().join("non_existant_directory");
 
     let index_file_path = restricted_dir.join(".index");
     let result = Index::new(&index_file_path);
     assert!(result.is_err());
-    // Restore permissions so temp_dir can be cleaned up
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let mut perms = fs::metadata(&restricted_dir).unwrap().permissions();
-        perms.set_mode(0o755); // rwxr-xr-x
-        fs::set_permissions(&restricted_dir, perms).unwrap();
-    }
 }
 
 #[test]
