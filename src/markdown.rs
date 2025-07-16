@@ -22,7 +22,7 @@ pub fn markdown_escape(initial: &str) -> String {
         if escape_this_char {
             escaped.push('\\');
         }
-                escaped.push(c);
+        escaped.push(c);
 
     }
     if tracing::enabled!(Level::TRACE) && escaped != initial {
