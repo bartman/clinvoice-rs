@@ -92,28 +92,40 @@ pub fn parse_time_spec(time_spec: &str) -> Result<f32, String> {
             return Err("Time range must have exactly two parts".to_string());
         }
         let start_str = parts[0];
-        let end_str = parts[1];
+        let end_str_raw = parts[1];
 
-        let start_str = if start_str.contains(':') {
+        let start_str_formatted = if start_str.contains(':') {
             start_str.to_string()
         } else {
             format!("{}:00", start_str)
         };
-        let end_str = if end_str.contains(':') {
-            end_str.to_string()
+
+        let (end_str_formatted, is_midnight) = if end_str_raw.contains(':') {
+            (end_str_raw.to_string(), end_str_raw == "24:00")
         } else {
-            format!("{}:00", end_str)
+            (format!("{}:00", end_str_raw), end_str_raw == "24")
         };
 
-        let start = NaiveTime::parse_from_str(&start_str, "%H:%M")
+        let start = NaiveTime::parse_from_str(&start_str_formatted, "%H:%M")
             .map_err(|_| "Invalid start time".to_string())?;
-        let end = NaiveTime::parse_from_str(&end_str, "%H:%M")
-            .map_err(|_| "Invalid end time".to_string())?;
+
+        let end = if is_midnight {
+            NaiveTime::from_hms_opt(0, 0, 0).unwrap()
+        } else {
+            NaiveTime::parse_from_str(&end_str_formatted, "%H:%M")
+                .map_err(|_| "Invalid end time".to_string())?
+        };
 
         let duration = end.signed_duration_since(start);
+
         if duration.num_minutes() < 0 {
+            if is_midnight {
+                let hours = (chrono::Duration::hours(24) + duration).num_minutes() as f32 / 60.0;
+                return Ok(hours);
+            }
             return Err("End time before start time".to_string());
         }
+
         let hours = duration.num_minutes() as f32 / 60.0;
         Ok(hours)
     } else {
@@ -282,6 +294,7 @@ mod tests {
     fn test_parse_time_spec_valid_range() {
         assert_eq!(parse_time_spec("9:00-17:00").unwrap(), 8.0);
         assert_eq!(parse_time_spec("9-17").unwrap(), 8.0);
+        assert_eq!(parse_time_spec("22-24").unwrap(), 2.0);
         assert_eq!(parse_time_spec("9:30-10:00").unwrap(), 0.5);
         assert_eq!(parse_time_spec("17:00-9:00").unwrap_err(), "End time before start time".to_string());
     }
