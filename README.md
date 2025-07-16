@@ -94,7 +94,7 @@ clinvoice log --format day 2025.07
 clinvoice log --format full 2025.07.01
 ```
 
-![heatmap](examples/clinvoice-log-month.png)
+![log](examples/clinvoice-log-month.png)
 
 ## Heatmap
 
@@ -152,6 +152,19 @@ For example:
     output      = "output-{{sequence}}.tex"
     build       = "pdflatex {{output}}"
 ```
+
+## Generating PDF
+
+A silly example is provided in the examples directory.
+
+```sh
+clinvoice generate 201011
+clinvoice generate 201012
+clinvoice generate 201101
+```
+
+![generate](examples/clinvoice-generate.png)
+
 
 ## Variables
 

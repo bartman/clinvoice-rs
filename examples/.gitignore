@@ -1,0 +1,5 @@
+bnl*.log
+bnl*.pdf
+bnl*.tex
+bnl*.aux
+.index
