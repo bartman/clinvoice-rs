@@ -94,6 +94,8 @@ clinvoice log --format day 2025.07
 clinvoice log --format full 2025.07.01
 ```
 
+![heatmap](examples/clinvoice-log-month.png)
+
 ## Heatmap
 
 You can also visualize your time entries as a heatmap using the `heatmap` command. This command displays a grid of colored squares, where the intensity of the color corresponds to the amount of work done on a given day.
@@ -103,6 +105,8 @@ Example:
 ```bash
 clinvoice heatmap 2025
 ```
+
+![heatmap](examples/clinvoice-heatmap.png)
 
 ## Templates
 
