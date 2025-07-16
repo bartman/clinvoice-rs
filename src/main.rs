@@ -46,6 +46,13 @@ enum Command {
         #[clap(value_parser)]
         dates: Vec<String>,
     },
+
+    /// Display a heatmap of entries
+    #[clap(about = "Display a heatmap of entries")]
+    Heatmap {
+        #[clap(value_parser)]
+        dates: Vec<String>,
+    },
 }
 
 
@@ -54,6 +61,7 @@ mod color;
 mod config;
 mod data;
 mod generate;
+mod heatmap;
 mod index;
 mod latex;
 mod log;
@@ -74,6 +82,9 @@ fn main() {
         },
         Some(Command::Generate { output, generator, sequence, dates }) => {
             generate::run(output, &generator, &sequence, &cli.directory, &cli.config, &dates)
+        },
+        Some(Command::Heatmap { dates }) => {
+            heatmap::run(&cli.directory, &dates)
         }
     }
 }

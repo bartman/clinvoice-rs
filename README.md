@@ -94,6 +94,16 @@ clinvoice log --format day 2025.07
 clinvoice log --format full 2025.07.01
 ```
 
+## Heatmap
+
+You can also visualize your time entries as a heatmap using the `heatmap` command. This command displays a grid of colored squares, where the intensity of the color corresponds to the amount of work done on a given day.
+
+Example:
+
+```bash
+clinvoice heatmap 2025
+```
+
 ## Templates
 
 Invoices are generated using Tera templates. Here is a simple example of a template:

@@ -30,6 +30,7 @@ This document provides a summary of the `clinvoice-rs` project to guide the Gemi
   - Supports subcommands:
     - `log`: Displays existing timesheet entries.
     - `generate`: Generates an invoice.
+    - `heatmap`: Displays a heatmap of timesheet entries.
 
 - **Data Structures (`src/data.rs`):**
   - Defines core data models: `Entry` (Time, FixedCost, Note), `DateRange`, `DateSelector`, and `TimeData`.
