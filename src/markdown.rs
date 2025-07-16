@@ -4,15 +4,26 @@ use tracing::Level;
 ///
 /// This function replaces special Markdown characters with their corresponding escape sequences.
 pub fn markdown_escape(initial: &str) -> String {
-    let mut escaped = String::new();
+    let mut escaped = String::with_capacity(initial.len() * 2);
+    let mut previous_digit = false;
+    let mut previous_space = false;
+
     for c in initial.chars() {
-        match c {
-            '\\' | '`' | '*' | '_' | '{' | '}' | '[' | ']' | '(' | ')' | '#' | '+' | '-' | '!' => {
-                escaped.push('\\');
-                escaped.push(c);
-            }
-            _ => escaped.push(c),
+        let escape_this_char = match c {
+            '\\' | '`' | '*' | '_' | '{' | '}' | '[' | ']' | '(' | ')' | '#' | '+' | '-' | '!' => true,
+            '.' => previous_digit, // escape a '.' to avoid number list from "1."
+            '>' => previous_space, // escape a '>' when it follows white space
+            _ => false,
+        };
+
+        previous_digit = c.is_digit(10);
+        previous_space = c.is_whitespace();
+
+        if escape_this_char {
+            escaped.push('\\');
         }
+                escaped.push(c);
+
     }
     if tracing::enabled!(Level::TRACE) && escaped != initial {
         tracing::trace!("MARKDOWN  {}  =>  {}", initial, escaped);
