@@ -67,6 +67,7 @@ mod latex;
 mod log;
 mod parse;
 mod tracing;
+mod markdown;
 
 /// Main entry point of the clinvoice application.
 fn main() {

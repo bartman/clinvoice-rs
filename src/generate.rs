@@ -1,6 +1,7 @@
 use crate::config::Config;
 use crate::data::{DateSelector, TimeData};
 use crate::latex::latex_escape;
+use crate::markdown::markdown_escape;
 
 use crate::color::*;
 use crate::index::Index;
@@ -40,9 +41,16 @@ impl TeraContextBuilder {
     pub fn build(&self, escape_mode: &str) -> Context {
         let mut context = Context::new();
         for (key, value) in &self.data {
-            if escape_mode == "latex" {
+            if escape_mode == "latex" || escape_mode == "tex" {
                 if let Some(s) = value.as_str() {
                     let e = latex_escape(s);
+                    context.insert(key.as_str(), &e);
+                } else {
+                    context.insert(key.as_str(), value);
+                }
+            } else if escape_mode == "markdown" || escape_mode == "md" {
+                if let Some(s) = value.as_str() {
+                    let e = markdown_escape(s);
                     context.insert(key.as_str(), &e);
                 } else {
                     context.insert(key.as_str(), value);
@@ -266,6 +274,8 @@ pub fn run(
 
         if escape_mode == "latex" {
             description = latex_escape(&description);
+        } else if escape_mode == "markdown" || escape_mode == "md" {
+            description = markdown_escape(&description);
         }
 
         days.push(Day {

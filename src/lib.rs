@@ -7,3 +7,4 @@ pub mod log;
 pub mod tracing;
 pub mod parse;
 pub mod index;
+pub mod markdown;
