@@ -4,7 +4,8 @@
 
 `clinvoice-rs` is a command-line tool for generating invoices from timesheet data. It reads `.cli` files, which contain time entries, and uses a Tera template to generate an invoice. The tool is configured using a `clinvoice.toml` file, which allows you to specify your invoice template, tax rate, and other settings. This allows for a high degree of customization and automation in your invoicing workflow.
 
-This is an oxidized version of [clinvoice-zsh](https://github.com/bartman/clinvoice-zsh) that I was previously using for about 15 years to generate invoices from text timesheets.
+This is an oxidized 🦀 version of [clinvoice-zsh](https://github.com/bartman/clinvoice-zsh), which I was previously using for about 15 years to generate invoices from text timesheets.
+I tried to stick to the original version so that my old timesheets were still legible, but the template and configuration files are not compatible.
 
 ## Timesheets
 
