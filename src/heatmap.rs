@@ -1,6 +1,7 @@
 use std::collections::HashMap;
-use chrono::{Datelike, NaiveDate, Weekday};
+use chrono::{Datelike, NaiveDate, Weekday, Month};
 use crate::data::{DateRange, DateSelector, TimeData, Entry};
+use num_traits::FromPrimitive;
 
 /// Runs the heatmap generation.
 pub fn run(directory: &Option<String>, dates: &[String]) {
@@ -55,16 +56,21 @@ fn draw_heatmap(
     end_date: NaiveDate,
     max_hours: f64,
 ) {
-    let mut current_date = start_date;
-    while current_date.weekday() != Weekday::Mon {
-        current_date = current_date.pred_opt().unwrap();
+    let mut first_monday = start_date;
+    while first_monday.weekday() != Weekday::Mon {
+        first_monday = first_monday.pred_opt().unwrap();
     }
 
     let mut weeks: Vec<Vec<Option<f64>>> = Vec::new();
+    let mut week_dates: Vec<NaiveDate> = Vec::new();
     let mut current_week = vec![None; 7];
+    let mut current_date = first_monday;
 
     while current_date <= end_date {
         let day_of_week = current_date.weekday().num_days_from_monday() as usize;
+        if day_of_week == 0 {
+            week_dates.push(current_date);
+        }
         current_week[day_of_week] = daily_hours.get(&current_date).cloned();
 
         if current_date.weekday() == Weekday::Sun {
@@ -77,18 +83,67 @@ fn draw_heatmap(
         weeks.push(current_week);
     }
 
+    let terminal_width = if let Some((w, _)) = term_size::dimensions() {
+        w
+    } else {
+        80 // Default width
+    };
+    let max_weeks = (terminal_width - 5) / 3;
+
+    if weeks.len() > max_weeks {
+        let start_index = weeks.len() - max_weeks;
+        weeks = weeks.into_iter().skip(start_index).collect();
+        week_dates = week_dates.into_iter().skip(start_index).collect();
+    }
+
+    // Print header
+    print!("     ");
+    for date in &week_dates {
+        print!("{:2} ", date.day());
+    }
+    println!();
+
+    // Print body
     for day_of_week in 0..7 {
-        for week in &weeks {
+        let day_label = match day_of_week {
+            0 => "Mon ",
+            2 => "Wed ",
+            4 => "Fri ",
+            6 => "Sun ",
+            _ => "    ",
+        };
+        print!("{}", day_label);
+
+        for (week_index, week) in weeks.iter().enumerate() {
             let cell = week[day_of_week];
-            let (r, g, b) = match cell {
-                Some(hours) if hours > 0.0 => {
-                    let intensity = (hours / max_hours * 230.0) as u8 + 25;
-                    (0, intensity, 0)
-                }
-                _ => (20, 20, 20),
-            };
-            print!("\u{1b}[38;2;{};{};{}m ◀▶\u{1b}[0m", r, g, b);
+            let current_day = week_dates[week_index] + chrono::Duration::days(day_of_week as i64);
+
+            if current_day < start_date || current_day > end_date {
+                print!("   ");
+            } else {
+                let (r, g, b) = match cell {
+                    Some(hours) if hours > 0.0 => {
+                        let intensity = (hours / max_hours * 230.0) as u8 + 25;
+                        (0, intensity, 0)
+                    }
+                    _ => (20, 20, 20),
+                };
+                print!("\u{1b}[38;2;{};{};{}m ◀▶\u{1b}[0m", r, g, b);
+            }
         }
         println!();
     }
+
+    // Print footer
+    print!("     ");
+    let mut last_month = 0;
+    for date in &week_dates {
+        if date.month() != last_month {
+            print!("{:3}", Month::from_u32(date.month()).unwrap().name()[..3].to_string());
+            last_month = date.month();
+        } else {
+            print!("   ");
+        }
+    }
+    println!();
 }
