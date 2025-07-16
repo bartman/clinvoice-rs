@@ -2,14 +2,23 @@
 
 ## About
 
-`clinvoice-rs` is a command-line tool for generating invoices from timesheet data. It reads `.cli` files, which contain time entries, and uses a Tera template to generate an invoice. The tool is configured using a `clinvoice.toml` file, which allows you to specify your invoice template, tax rate, and other settings. This allows for a high degree of customization and automation in your invoicing workflow.
+`clinvoice-rs` is a command-line tool for generating invoices from timesheet
+data. It reads `.cli` files, which contain time entries, and uses a Tera
+template to generate an invoice. The tool is configured using a
+`clinvoice.toml` file, which allows you to specify your invoice template, tax
+rate, and other settings. This allows for a high degree of customization and
+automation in your invoicing workflow.
 
-This is an oxidized 🦀 version of [clinvoice-zsh](https://github.com/bartman/clinvoice-zsh), which I was previously using for about 15 years to generate invoices from text timesheets.
-I tried to stick to the original version so that my old timesheets were still legible, but the template and configuration files are not compatible.
+This is an oxidized 🦀 version of
+[clinvoice-zsh](https://github.com/bartman/clinvoice-zsh), which I was
+previously using for about 15 years to generate invoices from text timesheets.
+I tried to stick to the original version so that my old timesheets were still
+legible, but the template and configuration files are not compatible.
 
 ## Timesheets
 
-Timesheet data is stored in `.cli` files. These files have a simple format, with each line representing either a date or a time entry.
+Timesheet data is stored in `.cli` files. These files have a simple format,
+with each line representing either a date or a time entry.
 
 ### Time Entries
 
@@ -40,7 +49,8 @@ Fixed cost entries allow you to add or subtract fixed amounts to the invoice.
 
 ### Notes
 
-Lines starting with `*` or `-` are treated as notes and are ignored in calculations but can be included in templates.
+Lines starting with `*` or `-` are treated as notes and are ignored in
+calculations but can be included in templates.
 
 ```
 2025.07.13
@@ -50,7 +60,9 @@ Lines starting with `*` or `-` are treated as notes and are ignored in calculati
 
 ### Comments
 
-Lines starting with `#` or `//` (with optional leading whitespace) are treated as full-line comments and are ignored by the parser. This is useful for adding notes to your timesheet files that you don't want to appear on the invoice.
+Lines starting with `#` or `//` (with optional leading whitespace) are treated
+as full-line comments and are ignored by the parser. This is useful for adding
+notes to your timesheet files that you don't want to appear on the invoice.
 
 ```
 # This is a full-line comment and will be ignored.
@@ -62,7 +74,9 @@ Lines starting with `#` or `//` (with optional leading whitespace) are treated a
 
 ## Configuration
 
-It expected that you have a directory of `.cli` files for each client, along with a `clinvoice.toml` configuration file, and a template used to generate the output.
+It expected that you have a directory of `.cli` files for each client, along
+with a `clinvoice.toml` configuration file, and a template used to generate the
+output.
 
 An directory of example files is provided to illustrate the setup:
 
@@ -79,7 +93,8 @@ An directory of example files is provided to illustrate the setup:
 
 ## Logs
 
-You can view your time entries using the `log` command. This command can display logs in different formats:
+You can view your time entries using the `log` command. This command can
+display logs in different formats:
 
 *   `full`: Shows all individual time entries.
 *   `day`: Aggregates entries by day.
@@ -99,7 +114,9 @@ clinvoice log --format full 2025.07.01
 
 ## Heatmap
 
-You can also visualize your time entries as a heatmap using the `heatmap` command. This command displays a grid of colored squares, where the intensity of the color corresponds to the amount of work done on a given day.
+You can also visualize your time entries as a heatmap using the `heatmap`
+command. This command displays a grid of colored squares, where the intensity
+of the color corresponds to the amount of work done on a given day.
 
 Example:
 
@@ -111,7 +128,12 @@ clinvoice heatmap 2025
 
 ## Templates
 
-Invoices are generated using Tera templates. Here is a simple example of a template:
+Invoices are generated using [Tera templates](https://github.com/Keats/tera),
+which has very similar syntax to Jinja2.  The output can be anything, as long
+as it's text.  Some examples would be text, HTML, LaTeX, or Markdown.
+
+Here is a simple example of a LaTeX template, where everything between `{{` and
+`}}` is interpreted by Tera:
 
 ```latex
 \documentclass{article}
@@ -137,8 +159,8 @@ This template will generate a simple LaTeX invoice with a table of time entries.
 
 The configuration can point to multiple generators, using multiple template
 files. One of the generators can be made default. If the configuration sets up
-a `build` command for this latex file, you have it automatically generate a PDF
-using `pdflatex`.
+a `build` command for the output file, you have it automatically do post
+processing on it. Below, we generate a PDF using `pdflatex`.
 
 For example:
 
