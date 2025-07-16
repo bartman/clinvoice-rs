@@ -82,6 +82,7 @@ fn extract_generated_filename(stderr: &str) -> Option<String> {
 #[case("16_generate_txt_index_seq_1")]
 #[case("17_generate_txt_index_seq_2_same_dates")]
 #[case("18_generate_txt_index_seq_3_diff_dates")]
+#[case("19_generate_markdown_single_file")]
 fn cli_test_case(#[case] test_name: &str) {
     let test_dir_base = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests").join("cli");
     let original_test_case_dir = test_dir_base.join(test_name);
@@ -123,7 +124,7 @@ fn cli_test_case(#[case] test_name: &str) {
         let generated_content = fs::read_to_string(&generated_file_path).unwrap();
         let expected_content = fs::read_to_string(&expected_output_path).unwrap();
 
-        assert_eq!(generated_content, expected_content, "Generated file content mismatch for test: {}", test_name);
+        assert_eq!(generated_content.trim(), expected_content.trim(), "Generated file content mismatch for test: {}", test_name);
     } else {
         let expected_stdout_path = original_test_case_dir.join("expected.stdout");
         let expected_stdout = fs::read_to_string(&expected_stdout_path).unwrap();

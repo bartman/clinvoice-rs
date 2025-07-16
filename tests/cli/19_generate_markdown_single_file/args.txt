@@ -1,0 +1,1 @@
+generate -g md -o invoice.md

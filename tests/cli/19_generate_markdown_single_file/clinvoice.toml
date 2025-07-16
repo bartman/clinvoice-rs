@@ -1,0 +1,7 @@
+[generator.md]
+template = "template.md"
+output = "invoice.md"
+escape = "md"
+
+[contract]
+hourly_rate = 100.0
