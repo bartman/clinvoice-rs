@@ -16,7 +16,7 @@ pub fn markdown_escape(initial: &str) -> String {
             _ => false,
         };
 
-        previous_digit = c.is_digit(10);
+        previous_digit = c.is_ascii_digit();
         previous_space = c.is_whitespace();
 
         if escape_this_char {

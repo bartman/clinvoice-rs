@@ -89,7 +89,7 @@ pub fn run(
                     hours_str.out_colored(Color::Green),
                     desc_str
                 );
-                grand_total = grand_total + total_hours;
+                grand_total += total_hours;
             }
             grand_total_indent = 12;
         }
@@ -108,7 +108,7 @@ pub fn run(
                 }).sum();
                 *monthly_totals.entry((year, month)).or_insert(0.0) += total;
                 *monthly_counts.entry((year, month)).or_insert(0) |= 1u64 << day;
-                grand_total = grand_total + total;
+                grand_total += total;
             }
 
             let mut months: Vec<_> = monthly_totals.keys().collect();
@@ -144,7 +144,7 @@ pub fn run(
                 }).sum();
                 *yearly_totals.entry(year).or_insert(0.0) += total;
                 *monthly_counts.entry((year, month)).or_insert(0) |= 1u64 << day;
-                grand_total = grand_total + total;
+                grand_total += total;
             }
 
             let mut yearly_counts: HashMap<i32, u32> = HashMap::new();

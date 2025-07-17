@@ -34,6 +34,7 @@ impl Index {
             .read(true)
             .write(true)
             .create(true)
+            .truncate(false)
             .open(file_path)?;
 
         file.lock_exclusive()?;
@@ -136,7 +137,7 @@ impl Index {
         let seq = self.sequences.keys().max().map_or(1, |&max_seq| max_seq + 1);
         // and add it to the list
         self.sequences.insert(seq, sorted_input_dates);
-        return seq;
+        seq
     }
 }
 

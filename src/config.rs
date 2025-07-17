@@ -38,7 +38,7 @@ impl Config {
             let path = PathBuf::from(path);
             if path.exists() {
                 tracing::trace!("user specified config_file={} exists", path.display());
-                return Ok(path.canonicalize()?);
+                return path.canonicalize();
             } else {
                 tracing::trace!("user specified config_file={} does not exist", path.display());
                 return Err(std::io::Error::new(std::io::ErrorKind::NotFound, "Specified config file does not exist"));
@@ -61,7 +61,7 @@ impl Config {
             tracing::trace!("checking candidate {}", candidate.display());
             if candidate.exists() {
                 tracing::debug!("found configuration {}", candidate.display());
-                return Ok(candidate.canonicalize()?);
+                return candidate.canonicalize();
             }
         }
 
@@ -120,10 +120,8 @@ impl Config {
         self.get_value(key).and_then(|v| {
             if let Some(f) = v.as_float() {
                 Some(f)
-            } else if let Some(i) = v.as_integer() {
-                Some(i as f64)
             } else {
-                None
+                v.as_integer().map(|i| i as f64)
             }
         })
     }

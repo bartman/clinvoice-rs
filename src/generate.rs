@@ -256,26 +256,26 @@ pub fn run(
             }
         }
 
-        let mut description = descriptions.join("; ");
+        let mut desc_text = descriptions.join("; ");
 
         total_hours_worked += total_hours;
 
         if cap_hours_per_day > 0.0 && total_hours > 0.0 && total_hours > cap_hours_per_day {
-            description.push_str(&format!(" ({} worked, {} billed)",
+            desc_text.push_str(&format!(" ({} worked, {} billed)",
                 total_hours, cap_hours_per_day));
             total_hours = cap_hours_per_day;
         }
 
         total_hours_counted += total_hours;
 
-        day_cost += total_hours as f64 * hourly_rate;
+        day_cost += total_hours * hourly_rate;
 
         tracing::trace!("DAY  {} {:3}  {}", date, total_hours, day_cost);
 
         if escape_mode == "latex" {
-            description = latex_escape(&description);
+            desc_text = latex_escape(&desc_text);
         } else if escape_mode == "markdown" || escape_mode == "md" {
-            description = markdown_escape(&description);
+            desc_text = markdown_escape(&desc_text);
         }
 
         days.push(Day {
@@ -283,7 +283,7 @@ pub fn run(
             date: date.format("%Y-%m-%d").to_string(),
             hours: total_hours as f32,
             cost: day_cost,
-            description: description,
+            description: desc_text,
         });
     }
 
@@ -458,19 +458,18 @@ fn process_builder(builder : String) {
             } else {
                 eprintln!("{}", line.colored(Color::BrightBlack));
             }
-        } else {
-            if line_has_negative {
-                show_output = true;
-                for past_line in &history {
-                    eprintln!("{}", past_line.colored(Color::BrightBlack));
-                }
-                eprintln!("{}", line.colored(Color::BrightRed));
-            } else {
-                if history.len() == negative_show_lines {
-                    history.pop_front();
-                }
-                history.push_back(line);
+
+        } else if line_has_negative {
+            show_output = true;
+            for past_line in &history {
+                eprintln!("{}", past_line.colored(Color::BrightBlack));
             }
+            eprintln!("{}", line.colored(Color::BrightRed));
+        } else {
+            if history.len() == negative_show_lines {
+                history.pop_front();
+            }
+            history.push_back(line);
         }
     }
 
