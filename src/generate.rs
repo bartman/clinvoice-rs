@@ -22,6 +22,12 @@ pub struct TeraContextBuilder {
     data: HashMap<String, Value>,
 }
 
+impl Default for TeraContextBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TeraContextBuilder {
     /// Creates a new, empty `TeraContextBuilder`.
     pub fn new() -> Self {
@@ -216,8 +222,8 @@ pub fn run(
     let today = now.date_naive();
     let invoice_date = today;
     let due_date = today + chrono::Duration::days(config.get_i64("contract.payment_days").unwrap_or(30));
-    let period_start = sorted_dates.first().map(|d| *d).unwrap_or(&today);
-    let period_end = sorted_dates.last().map(|d| *d).unwrap_or(&today);
+    let period_start = sorted_dates.first().copied().unwrap_or(&today);
+    let period_end = sorted_dates.last().copied().unwrap_or(&today);
 
     context_builder.insert("now", &now.to_rfc3339());
     context_builder.insert("today", &today.format("%Y-%m-%d").to_string());
@@ -445,7 +451,7 @@ fn process_builder(builder : String) {
     let mut history: VecDeque<String> = VecDeque::with_capacity(negative_show_lines);
     let mut full_output = Vec::new();
 
-    let negative_words = vec!["error", "fail", "fatal", "warn", "undefined", "missing"];
+    let negative_words = ["error", "fail", "fatal", "warn", "undefined", "missing"];
 
     for line in rx {
         full_output.push(line.clone());

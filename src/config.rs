@@ -149,13 +149,13 @@ impl Config {
     pub fn get_flattened_values(&self, key_separator: &str) -> HashMap<String, Value> {
         let mut map = HashMap::new();
         if let Some(table) = self.value.as_table() {
-            self.flatten_table_recursive("", table, &mut map, key_separator);
+            Self::flatten_table_recursive("", table, &mut map, key_separator);
         }
         map
     }
 
     // Recursively flattens a TOML table into a HashMap.
-    fn flatten_table_recursive(&self, prefix: &str, table: &toml::map::Map<String, Value>, map: &mut HashMap<String, Value>, key_separator: &str) {
+    fn flatten_table_recursive(prefix: &str, table: &toml::map::Map<String, Value>, map: &mut HashMap<String, Value>, key_separator: &str) {
         for (key, value) in table {
             let new_key = if prefix.is_empty() {
                 key.clone()
@@ -164,7 +164,7 @@ impl Config {
             };
 
             if let Some(sub_table) = value.as_table() {
-                self.flatten_table_recursive(&new_key, sub_table, map, key_separator);
+                Self::flatten_table_recursive(&new_key, sub_table, map, key_separator);
             } else {
                 map.insert(new_key, value.clone());
             }

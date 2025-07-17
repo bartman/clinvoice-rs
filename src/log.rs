@@ -34,8 +34,7 @@ pub fn run(
     let time_data = TimeData::new(directory, &selector).expect("Failed to load data");
 
     let mut grand_total: f32 = 0.0;
-    let grand_total_indent;
-    match format {
+    let grand_total_indent = match format {
         LogFormat::Full => {
             let mut dates: Vec<_> = time_data.entries.keys().collect();
             dates.sort();
@@ -57,7 +56,7 @@ pub fn run(
                     grand_total += hours;
                 }
             }
-            grand_total_indent = 12;
+            12 // grand_total_indent
         }
         LogFormat::Day => {
             let mut dates: Vec<_> = time_data.entries.keys().collect();
@@ -91,7 +90,7 @@ pub fn run(
                 );
                 grand_total += total_hours;
             }
-            grand_total_indent = 12;
+            12 // grand_total_indent
         }
         LogFormat::Month => {
             let mut monthly_totals: HashMap<(i32, u32), f32> = HashMap::new();
@@ -127,7 +126,7 @@ pub fn run(
                     count_str.out_colored(Color::Yellow),
                 );
             }
-            grand_total_indent = 9;
+            9 // grand_total_indent
         }
         LogFormat::Year => {
             let mut yearly_totals: HashMap<i32, f32> = HashMap::new();
@@ -170,9 +169,9 @@ pub fn run(
                     count_str.out_colored(Color::Yellow),
                 );
             }
-            grand_total_indent = 6;
+            6 // grand_total_indent
         }
-    }
+    };
     let grand_total_str = format!("{:8.2}", grand_total);
     println!("{:<width$}{}",
         "Total:".out_colored(Color::Red),

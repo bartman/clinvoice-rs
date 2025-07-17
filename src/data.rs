@@ -27,6 +27,12 @@ pub struct DateSelector {
     pub ranges: Vec<DateRange>,
 }
 
+impl Default for DateSelector {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DateSelector {
     /// Creates a new, empty `DateSelector`.
     pub fn new() -> Self {
