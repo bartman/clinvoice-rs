@@ -4,6 +4,18 @@ use crate::tracing::TraceLevel;
 use crate::color::*;
 use crate::log::LogFormat;
 
+mod color;
+mod config;
+mod data;
+mod generate;
+mod heatmap;
+mod index;
+mod latex;
+mod log;
+mod markdown;
+mod parse;
+mod tracing;
+
 /// Command-line interface arguments for the clinvoice application.
 #[derive(Parser)]
 struct Cli {
@@ -54,20 +66,6 @@ enum Command {
         dates: Vec<String>,
     },
 }
-
-
-
-mod color;
-mod config;
-mod data;
-mod generate;
-mod heatmap;
-mod index;
-mod latex;
-mod log;
-mod parse;
-mod tracing;
-mod markdown;
 
 /// Main entry point of the clinvoice application.
 fn main() {
