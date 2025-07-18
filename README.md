@@ -29,6 +29,13 @@ cargo install --path .
 This will place the executable in `~/.cargo/bin` which must be added to
 your `PATH`.
 
+Alternatively you can install `cargo-deb` package and run:
+
+```sh
+cargo-deb -o clinvoice.deb
+sudo dpkg -i clinvoice.deb
+```
+
 ## Timesheets
 
 Timesheet data is stored in `.cli` files. These files have a simple format,
