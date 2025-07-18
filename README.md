@@ -15,6 +15,20 @@ previously using for about 15 years to generate invoices from text timesheets.
 I tried to stick to the original version so that my old timesheets were still
 legible, but the template and configuration files are not compatible.
 
+## Building
+
+To build you will need rust installed.  The following steps should work
+on Debian based systems, like Ubuntu...
+
+```sh
+sudo apt install cargo
+cargo build
+cargo install --path .
+```
+
+This will place the executable in `~/.cargo/bin` which must be added to
+your `PATH`.
+
 ## Timesheets
 
 Timesheet data is stored in `.cli` files. These files have a simple format,
