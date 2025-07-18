@@ -1,0 +1,7 @@
+[generator.check]
+output = "test.output"
+template = "template.txt"
+build = "awk '/Total Amount: 1000.00/ { print \"OK\"; exit 0 } { exit 1 }' test.output"
+
+[contract]
+hourly_rate = 100.0

@@ -83,6 +83,7 @@ fn extract_generated_filename(stderr: &str) -> Option<String> {
 #[case("17_generate_txt_index_seq_2_same_dates")]
 #[case("18_generate_txt_index_seq_3_diff_dates")]
 #[case("19_generate_markdown_single_file")]
+#[case("20_generate_with_build")]
 fn cli_test_case(#[case] test_name: &str) {
     let test_dir_base = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests").join("cli");
     let original_test_case_dir = test_dir_base.join(test_name);

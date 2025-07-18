@@ -1,0 +1,1 @@
+Total Amount: {{ total_amount | decimal(precision=2) }}
