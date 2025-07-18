@@ -14,6 +14,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
 use std::path::Path;
 use std::process::{Command, Stdio};
+use std::error::Error;
 use tera::{Context, Tera, to_value, try_get_value, Value};
 
 /// A builder for creating Tera contexts, allowing for insertion of serializable data
@@ -137,6 +138,19 @@ fn decimal_filter(value: &Value, args: &HashMap<String, Value>) -> tera::Result<
     Ok(to_value(format!("{:.precision$}", num, precision = precision)).unwrap())
 }
 
+fn format_tera_error(e: tera::Error) -> String {
+    let mut error_message = String::new();
+    error_message.push_str(&format!("{}\n", e));
+
+    let mut current_error = e.source();
+    while let Some(source) = current_error {
+        error_message.push_str(&format!("{}\n", source));
+        current_error = source.source();
+    }
+
+    error_message
+}
+
 /// Runs the invoice generation process.
 ///
 /// This function orchestrates the entire invoice generation, including:
@@ -182,6 +196,7 @@ pub fn run(
         .expect("template not specified in config");
     let path = Path::new(directory).join(template_path.clone());
     template_path = path.to_str().unwrap().to_string();
+    let template_name = path.file_name().unwrap().to_str().unwrap();
 
     let selector = DateSelector::from_dates(dates).unwrap_or_else(|err| {
         tracing::error!("{}", err);
@@ -340,8 +355,10 @@ pub fn run(
     tera.register_filter("decimal", decimal_filter);
 
     let template_content = fs::read_to_string(&template_path).expect("Unable to read template file");
-    tera.add_raw_template("invoice", &template_content)
-        .expect("Failed to add template");
+    if let Err(e) = tera.add_raw_template(template_name, &template_content) {
+        tracing::error!("{}", format_tera_error(e));
+        std::process::exit(1);
+    }
 
     let output_path = match output_option {
         Some(path) => path,
@@ -351,14 +368,21 @@ pub fn run(
                 .expect("output not specified in config, use --output option.");
 
             let mut output_file_tera = Tera::default();
-            output_file_tera
-                .add_raw_template("output", &output_file_template_string)
-                .unwrap();
+            if let Err(e) = output_file_tera
+                .add_raw_template("output", &output_file_template_string) {
+                tracing::error!("{}", format_tera_error(e));
+                std::process::exit(1);
+            }
 
             tracing::trace!("output template: {}", output_file_template_string);
 
-            let rendered = output_file_tera.render("output", &context_builder.build("none"))
-                .expect("Failed to render output filename");
+            let rendered = match output_file_tera.render("output", &context_builder.build("none")) {
+                Ok(s) => s,
+                Err(e) => {
+                    tracing::error!("{}", format_tera_error(e));
+                    std::process::exit(1);
+                }
+            };
 
             tracing::trace!("output filename: {}", rendered);
 
@@ -374,12 +398,19 @@ pub fn run(
         None => None,
         Some(cmd) => {
             let mut build_cmd_tera = Tera::default();
-            build_cmd_tera
-                .add_raw_template("build_command", &cmd)
-                .unwrap();
+            if let Err(e) = build_cmd_tera
+                .add_raw_template("build_command", &cmd) {
+                tracing::error!("{}", format_tera_error(e));
+                std::process::exit(1);
+            }
 
-            let rendered = build_cmd_tera.render("build_command", &context_builder.build("none"))
-                .expect("Failed to render build command");
+            let rendered = match build_cmd_tera.render("build_command", &context_builder.build("none")) {
+                Ok(s) => s,
+                Err(e) => {
+                    tracing::error!("{}", format_tera_error(e));
+                    std::process::exit(1);
+                }
+            };
 
             Some(rendered)
         },
@@ -390,7 +421,13 @@ pub fn run(
     context_builder.insert("days", &days);
 
     let final_context = context_builder.build(&escape_mode);
-    let rendered = tera.render("invoice", &final_context).expect("Failed to render template");
+    let rendered = match tera.render(template_name, &final_context) {
+        Ok(s) => s,
+        Err(e) => {
+            tracing::error!("{}", format_tera_error(e));
+            std::process::exit(1);
+        }
+    };
 
     if output_path == "-" {
         println!("{}", rendered);
