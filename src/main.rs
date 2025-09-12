@@ -1,5 +1,4 @@
-use clap::{Parser, Subcommand};
-use clap::CommandFactory;
+use clap::{Parser, Subcommand, CommandFactory};
 use crate::tracing::TraceLevel;
 use crate::color::*;
 use crate::log::LogFormat;
@@ -16,8 +15,27 @@ mod markdown;
 mod parse;
 mod tracing;
 
+use clap::builder::styling::{Styles, AnsiColor, Effects, Style};
+pub(crate) const HEADER: Style = AnsiColor::Green.on_default().effects(Effects::BOLD);
+pub(crate) const USAGE: Style = AnsiColor::Green.on_default().effects(Effects::BOLD);
+pub(crate) const LITERAL: Style = AnsiColor::Cyan.on_default().effects(Effects::BOLD);
+pub(crate) const PLACEHOLDER: Style = AnsiColor::Cyan.on_default();
+pub(crate) const ERROR: Style = AnsiColor::Red.on_default().effects(Effects::BOLD);
+pub(crate) const VALID: Style = AnsiColor::Cyan.on_default().effects(Effects::BOLD);
+pub(crate) const INVALID: Style = AnsiColor::Yellow.on_default().effects(Effects::BOLD);
+pub(crate) const CLAP_STYLING: Styles = Styles::styled()
+    .header(HEADER)
+    .usage(USAGE)
+    .literal(LITERAL)
+    .placeholder(PLACEHOLDER)
+    .error(ERROR)
+    .valid(VALID)
+    .invalid(INVALID);
+
 /// Command-line interface arguments for the clinvoice application.
 #[derive(Parser)]
+#[clap(about,version)]
+#[clap(styles = CLAP_STYLING)]
 struct Cli {
     #[clap(short = 'l', long, help = "select log level (error, warn, [info], debug, trace)", default_value = "info")]
     log_level: TraceLevel,
