@@ -234,6 +234,7 @@ Advanced
 * `total_hours_counted` is number of hours after `contract.cap_hours_per_day` limit is applied
 * `total_hours_billed` is number of hours capped to `contract.cap_hours_per_invoice`
 * `overage_hours` is number of hours counted, but not billed
+* `worked_amount` is `rate * total_hours_worked`
 * `counted_amount` is `rate * total_hours_counted`
 * `billed_amount` is `rate * total_hours_billed` (included in `subtotal_amount`)
 
@@ -246,6 +247,18 @@ These variables are available within the `{% for day in days %}` loop:
 *   `day.hours`: The total hours for the day.
 *   `day.cost`: The cost for the day (hours * rate).
 *   `day.description`: A semicolon-separated list of descriptions for the day's entries.
+
+### Adjustment Variables
+
+An adjustment is a modification to the `subtotal`.  There is currently only
+one such item, and that is a result of `cap_hours_per_day` setting in the contract.
+If the variable is set, then the subtotal will be reduced to cap the worked hours
+before applying tax.
+
+These variables are available within the `{% for adj in adjustments %}` loop:
+
+*   `day.cost`: The total cost (negative) of the adjustment.
+*   `day.description`: "Contract capped at {} hours; discount for {} hours".
 
 ### Filters
 

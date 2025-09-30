@@ -49,22 +49,22 @@ Prices calculated according to contract signed by the above parties.
 
 \begin{center}
 \begin{tabular}{ r l p{0.5\textwidth} r r }
-\hline
-\textbf{No.} &  \textbf{Date} & \textbf{Description} & \textbf{Hours} & \textbf{Cost} \\
-\hline
+    \hline
+    \textbf{No.} &  \textbf{Date} & \textbf{Description} & \textbf{Hours} & \textbf{Cost} \\
+    \hline
 {% for day in days %}
         {{ day.index }} & {{ day.date | date(format="%Y-%m-%d") }} & {{ day.description }} & {{ day.hours }} & {{ day.cost | round(precision=2) }} \\
 {% endfor %}\hline
-\multicolumn{4}{r}{ \textbf{Subtotal} } & {{ subtotal_amount | round(precision=2) }} \\
+    \multicolumn{4}{r}{ \textbf{Subtotal} } & {{ subtotal_amount | round(precision=2) }} \\
 {% if tax %}
         & & {{ tax_name }} & {{ tax_percent }}% & {{ tax_amount | round(precision=2) }} \\
 {% endif %}
-{% if contract.discounts %}
-{% for discount in contract.discounts %}
-        & & {{ discount.text }} & & ({{ discount.cost | round(precision=2) }}) \\
+{% if adjustments %}
+{% for adj in adjustments %}
+        & & {{ adj.description }} & & ({{ adj.cost | round(precision=2) }}) \\
 {% endfor %}
 {% endif %}\hline
-\multicolumn{4}{r}{ \textbf{Total} } & {{ total_amount | round(precision=2) }} \\
+    \multicolumn{4}{r}{ \textbf{Total} } & {{ total_amount | round(precision=2) }} \\
 \end{tabular}
 \end{center}
 

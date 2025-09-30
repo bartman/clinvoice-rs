@@ -40,7 +40,9 @@ impl TeraContextBuilder {
     /// Inserts a serializable value into the context builder.
     /// The value is converted to a `tera::Value`.
     pub fn insert<T: Serialize + ?Sized>(&mut self, key: &str, value: &T) {
-        self.data.insert(key.to_string(), to_value(value).unwrap());
+        let uval = to_value(value).unwrap();
+        tracing::trace!("VAR  {} = {}", key, uval);
+        self.data.insert(key.to_string(), uval);
     }
 
     /// Builds the Tera context from the accumulated data.
@@ -75,6 +77,12 @@ struct Day {
     index: usize,
     date: String,
     hours: f32,
+    cost: f64,
+    description: String,
+}
+
+#[derive(Serialize)]
+struct Adjustment {
     cost: f64,
     description: String,
 }
@@ -224,6 +232,7 @@ pub fn run(
     }
 
     let mut days = Vec::new();
+    let mut adjustments = Vec::new();
     let mut total_hours_worked = 0.0f64;
     let mut total_hours_counted = 0.0f64;
     let mut total_fees = 0.0f64;
@@ -314,14 +323,34 @@ pub fn run(
     context_builder.insert("total_hours_worked", &total_hours_worked);
     context_builder.insert("total_hours_counted", &total_hours_counted);
 
+    let worked_amount = total_hours_worked * hourly_rate;
+    context_builder.insert("worked_amount", &worked_amount);
+
     let counted_amount = total_hours_counted * hourly_rate;
     context_builder.insert("counted_amount", &counted_amount);
+
+    let subtotal_amount = total_hours_counted + total_fees;
+    context_builder.insert("subtotal_amount", &subtotal_amount);
 
     let mut overage_hours = 0.0;
     let mut overage_discount = 0.0;
     if cap_hours_per_invoice > 0.0 && total_hours_counted > cap_hours_per_invoice  {
         overage_hours = total_hours_counted - cap_hours_per_invoice;
         overage_discount = - (overage_hours * hourly_rate);
+
+        let mut desc_text = format!("Contract capped at {} hours; discount for {} hours",
+            cap_hours_per_invoice, overage_hours);
+
+        if escape_mode == "latex" {
+            desc_text = latex_escape(&desc_text);
+        } else if escape_mode == "markdown" || escape_mode == "md" {
+            desc_text = markdown_escape(&desc_text);
+        }
+
+        adjustments.push(Adjustment {
+            cost: overage_discount,
+            description: desc_text,
+        });
     }
 
     context_builder.insert("overage_hours", &overage_hours);
@@ -333,12 +362,15 @@ pub fn run(
     let billed_amount = total_hours_billed * hourly_rate;
     context_builder.insert("billed_amount", &billed_amount);
 
-    let subtotal_amount = billed_amount + total_fees + total_discounts;
+    let subtotal_amount = worked_amount + total_fees + total_discounts;
     context_builder.insert("subtotal_amount", &subtotal_amount);
 
+    let subtotal_amount_with_discount = subtotal_amount + overage_discount;
+    context_builder.insert("subtotal_amount_with_discount", &subtotal_amount_with_discount);
+
     let tax_percent = config.get_f64("tax.percent").unwrap_or(0.0);
-    let tax_amount = subtotal_amount * tax_percent / 100.0;
-    let total_amount = subtotal_amount + tax_amount;
+    let tax_amount = subtotal_amount_with_discount * tax_percent / 100.0;
+    let total_amount = subtotal_amount_with_discount + tax_amount;
 
     context_builder.insert("tax_amount", &tax_amount);
     context_builder.insert("total_amount", &total_amount);
@@ -419,6 +451,7 @@ pub fn run(
     // days are not made available to the output_path Tera context,
     // but must be available for the template processing.
     context_builder.insert("days", &days);
+    context_builder.insert("adjustments", &adjustments);
 
     let final_context = context_builder.build(&escape_mode);
     let rendered = match tera.render(template_name, &final_context) {
