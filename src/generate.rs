@@ -266,6 +266,7 @@ pub fn run(
         let mut descriptions = Vec::new();
 
         for entry in entries {
+                                    tracing::trace!("ENTRY: {}", entry);
             match entry {
                 crate::data::Entry::Time(h, d) => {
                     total_hours += *h as f64;
@@ -275,8 +276,10 @@ pub fn run(
                     let entry_cost = *c as f64;
                     descriptions.push(d.clone());
                     if entry_cost > 0.0 {
+                        day_cost += entry_cost;
                         total_fees += entry_cost;
                     } else {
+                        day_cost += entry_cost;
                         total_discounts += entry_cost;
                     }
                 }
@@ -362,7 +365,7 @@ pub fn run(
     let billed_amount = total_hours_billed * hourly_rate;
     context_builder.insert("billed_amount", &billed_amount);
 
-    let subtotal_amount = worked_amount + total_fees + total_discounts;
+    let subtotal_amount = counted_amount + total_fees + total_discounts;
     context_builder.insert("subtotal_amount", &subtotal_amount);
 
     let subtotal_amount_with_discount = subtotal_amount + overage_discount;

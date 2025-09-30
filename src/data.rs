@@ -14,6 +14,16 @@ pub enum Entry {
     Note(String),
 }
 
+impl std::fmt::Display for Entry {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Entry::Time(value, description) => write!(f, "Time({}, {})", value, description),
+            Entry::FixedCost(value, description) => write!(f, "FixedCost({}, {})", value, description),
+            Entry::Note(description) => write!(f, "Note({})", description),
+        }
+    }
+}
+
 /// Represents a range of dates, inclusive of start and end dates.
 #[derive(Debug)]
 pub struct DateRange {
@@ -126,6 +136,7 @@ impl TimeData {
                         if selector.selected(&date) {
                             match parse_line(line) {
                                 Ok(entry) => {
+                                    tracing::trace!("ENTRY: {}", entry);
                                     entries.entry(date).or_insert_with(Vec::new).push(entry);
                                 }
                                 Err(err) => {
