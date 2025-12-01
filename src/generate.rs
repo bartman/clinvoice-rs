@@ -41,7 +41,7 @@ impl TeraContextBuilder {
     /// The value is converted to a `tera::Value`.
     pub fn insert<T: Serialize + ?Sized>(&mut self, key: &str, value: &T) {
         let uval = to_value(value).unwrap();
-        tracing::trace!("VAR  {} = {}", key, uval);
+        tracing::trace!("VAR {} = {} ({})", key, uval, std::any::type_name::<T>());
         self.data.insert(key.to_string(), uval);
     }
 
