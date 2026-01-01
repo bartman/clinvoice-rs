@@ -399,6 +399,58 @@ Day 1: {{ days.0.hours }} {{ days.0.description }}
 }
 
 #[test]
+fn test_generate_with_backdate() -> Result<(), Box<dyn std::error::Error>> {
+    let mut cli_contents = HashMap::new();
+    cli_contents.insert(
+        "timesheet.cli",
+        r#"
+2025.01.01
+8h = Development
+"#,
+    );
+    let config_content = r#"
+[contract]
+hourly_rate = 100.0
+
+[generator.txt]
+template = "template.txt"
+output = "invoice.txt"
+"#;
+    let template_content = r#"
+Today: {{ today }}
+Invoice date: {{ invoice_date }}
+Total amount: {{ total_amount }}
+"#;
+
+    let temp_dir = create_test_env(&cli_contents, config_content)?;
+    std::fs::write(temp_dir.path().join("template.txt"), template_content)?;
+
+    let output_path = temp_dir.path().join("invoice.txt");
+    let directory_option = Some(temp_dir.path().to_str().unwrap().to_string());
+    let config_file_option = Some(temp_dir.path().join("clinvoice.toml").to_str().unwrap().to_string());
+
+    generate::run(
+        Some(output_path.to_str().unwrap().to_string()),
+        &Some("txt".to_string()),
+        &None,
+        &Some("2024.12.31".to_string()), // Backdate to Dec 31, 2024
+        &directory_option,
+        &config_file_option,
+        &[],
+    );
+
+    let generated_content = std::fs::read_to_string(&output_path)?;
+    println!("{}", generated_content);
+
+    // Verify that today and invoice_date are set to the specified backdate
+    assert!(generated_content.contains("Today: 2024-12-31"));
+    assert!(generated_content.contains("Invoice date: 2024-12-31"));
+    assert!(generated_content.contains("Total amount: 800"));
+
+    Ok(())
+}
+
+#[test]
 fn test_cap_hours_per_invoice() -> Result<(), Box<dyn std::error::Error>> {
     let mut cli_contents = HashMap::new();
     cli_contents.insert(
