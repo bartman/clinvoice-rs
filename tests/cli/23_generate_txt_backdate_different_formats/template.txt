@@ -1,0 +1,4 @@
+Today: {{ today }}
+Invoice date: {{ invoice_date }}
+Due date: {{ due_date | date(format="%Y-%m-%d") }}
+Total: {{ total_amount }}

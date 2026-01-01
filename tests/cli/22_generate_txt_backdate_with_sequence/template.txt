@@ -1,0 +1,4 @@
+Invoice #{{ sequence }}
+Date: {{ invoice_date | date(format="%Y-%m-%d") }}
+Due: {{ due_date | date(format="%Y-%m-%d") }}
+Amount: {{ total_amount }}
