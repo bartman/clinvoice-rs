@@ -73,6 +73,8 @@ enum Command {
         generator: Option<String>,
         #[clap(short, long)]
         sequence: Option<u32>,
+        #[clap(short = 'b', long, help = "Backdate invoice to specified date (YYYYMMDD, YYYY-MM-DD, or YYYY.MM.DD)")]
+        backdate: Option<String>,
         #[clap(value_parser)]
         dates: Vec<String>,
     },
@@ -97,8 +99,8 @@ fn main() {
         Some(Command::Log { format, dates }) => {
             log::run(format, &cli.directory, &dates)
         },
-        Some(Command::Generate { output, generator, sequence, dates }) => {
-            generate::run(output, &generator, &sequence, &cli.directory, &cli.config, &dates)
+        Some(Command::Generate { output, generator, sequence, backdate, dates }) => {
+            generate::run(output, &generator, &sequence, &backdate, &cli.directory, &cli.config, &dates)
         },
         Some(Command::Heatmap { dates }) => {
             heatmap::run(&cli.directory, &dates)

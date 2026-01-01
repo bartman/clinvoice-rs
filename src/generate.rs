@@ -2,10 +2,11 @@ use crate::config::Config;
 use crate::data::{DateSelector, TimeData};
 use crate::latex::latex_escape;
 use crate::markdown::markdown_escape;
+use crate::parse::parse_date;
 
 use crate::color::*;
 use crate::index::Index;
-use chrono::{Local, NaiveDate};
+use chrono::{Local, NaiveDate, TimeZone, Datelike};
 use colored::Color;
 use serde::Serialize;
 use std::collections::{HashMap, VecDeque};
@@ -173,6 +174,7 @@ pub fn run(
     output_option: Option<String>,
     generator_option: &Option<String>,
     sequence_option: &Option<u32>,
+    backdate: &Option<String>,
     directory_option: &Option<String>,
     config_file: &Option<String>,
     dates: &[String],
@@ -242,7 +244,22 @@ pub fn run(
     let mut sorted_dates: Vec<_> = time_data.entries.keys().collect();
     sorted_dates.sort();
 
-    let now = Local::now();
+    //let now = Local.with_ymd_and_hms(2025, 11, 30, 0, 0, 0).unwrap();
+    let now = if let Some(backdate_str) = backdate {
+        let naive_date = parse_date(backdate_str).unwrap_or_else(|| {
+            tracing::error!("Invalid backdate format: '{}'. Expected YYYYMMDD, YYYY-MM-DD, or YYYY.MM.DD", backdate_str);
+            std::process::exit(1);
+        });
+        match Local.with_ymd_and_hms(naive_date.year(), naive_date.month(), naive_date.day(), 0, 0, 0) {
+            chrono::LocalResult::Single(dt) => dt,
+            _ => {
+                tracing::error!("Invalid backdate: '{}'", backdate_str);
+                std::process::exit(1);
+            }
+        }
+    } else {
+        Local::now()
+    };
     let today = now.date_naive();
     let invoice_date = today;
     let due_date = today + chrono::Duration::days(config.get_i64("contract.payment_days").unwrap_or(30));
