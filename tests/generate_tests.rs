@@ -65,6 +65,7 @@ Total amount: {{ total_amount }}
         Some(output_path.to_str().unwrap().to_string()),
         &Some("txt".to_string()),
         &None,
+        &None,
         &directory_option,
         &config_file_option,
         &[],
@@ -145,6 +146,7 @@ Total amount: {{ total_amount }}
         Some(output_path.to_str().unwrap().to_string()),
         &Some("txt".to_string()),
         &None,
+        &None,
         &directory_option,
         &config_file_option,
         &["2025.01".to_string()], // Select only January
@@ -212,6 +214,7 @@ Total amount: {{ total_amount }}
         Some(output_path.to_str().unwrap().to_string()),
         &Some("txt".to_string()),
         &None,
+        &None,
         &directory_option,
         &config_file_option,
         &[],
@@ -276,6 +279,7 @@ output = "custom_invoice.txt"
         Some(default_output_path.to_str().unwrap().to_string()),
         &None, // Use default generator
         &None,
+        &None,
         &directory_option,
         &config_file_option,
         &[],
@@ -290,6 +294,7 @@ output = "custom_invoice.txt"
     generate::run(
         Some(custom_output_path.to_str().unwrap().to_string()),
         &Some("custom".to_string()), // Use custom generator
+        &None,
         &None,
         &directory_option,
         &config_file_option,
@@ -315,6 +320,7 @@ hourly_rate = "invalid"
     let result = std::panic::catch_unwind(|| {
         generate::run(
             None,
+            &None,
             &None,
             &None,
             &directory_option,
@@ -372,6 +378,7 @@ Day 1: {{ days.0.hours }} {{ days.0.description }}
     generate::run(
         Some(output_path.to_str().unwrap().to_string()),
         &Some("txt".to_string()),
+        &None,
         &None,
         &directory_option,
         &config_file_option,
@@ -434,6 +441,7 @@ Total amount: {{ total_amount }}
     generate::run(
         Some(output_path.to_str().unwrap().to_string()),
         &Some("txt".to_string()),
+        &None,
         &None,
         &directory_option,
         &config_file_option,
