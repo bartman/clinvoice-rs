@@ -1,5 +1,8 @@
 # clinvoice-rs
 
+[![CI](https://github.com/bartman/clinvoice-rs/actions/workflows/rust.yml/badge.svg)](https://github.com/bartman/clinvoice-rs/actions)
+
+
 ## About
 
 `clinvoice-rs` is a command-line tool for generating invoices from timesheet
