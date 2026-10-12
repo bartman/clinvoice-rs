@@ -142,7 +142,7 @@ impl TimeData {
                                 Err(err) => {
                                     let path_line = format!("{}:{}", file_path.display(), line_number + 1);
                                     tracing::warn!("{}\n\t{}: {}",
-                                        err.err_colored(Color::Yellow),
+                                        err.err_colored(Color::Red),
                                         path_line, line);
                                 }
                             }
@@ -152,7 +152,7 @@ impl TimeData {
 
                         let err = "Expected date, found:";
                         tracing::warn!("{}\n\t{}: {}",
-                            err.err_colored(Color::Yellow),
+                            err.err_colored(Color::Red),
                             path_line, line);
                     }
                 }

@@ -42,6 +42,8 @@ static G_COLOR_ENABLED: OnceLock<ColorEnable> = OnceLock::new();
 ///
 /// This function should be called once at the application startup.
 pub fn init(color_option: &ColorOption) {
+    // Coloring decisions are made per-stream by `DynamicColorize`, not by `colored`'s own tty check.
+    colored::control::set_override(true);
     G_COLOR_ENABLED.set(ColorEnable::new(color_option)).expect("init called multiple times");
 }
 

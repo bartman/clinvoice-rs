@@ -1,4 +1,4 @@
-use tracing_subscriber::{fmt, prelude::*, EnvFilter};
+use tracing_subscriber::{field::MakeExt, fmt, prelude::*, EnvFilter};
 use clap::{ValueEnum};
 use std::fs::File;
 use crate::color;
@@ -26,6 +26,20 @@ impl TraceLevel {
     }
 }
 
+/// Formats event fields without escaping ANSI sequences, so colored messages render.
+///
+/// tracing-subscriber >= 0.3.20 escapes control characters in field values by default.
+fn raw_field_formatter() -> impl for<'w> fmt::FormatFields<'w> + 'static {
+    fmt::format::debug_fn(|writer, field, value| {
+        if field.name() == "message" {
+            write!(writer, "{:?}", value)
+        } else {
+            write!(writer, "{}={:?}", field, value)
+        }
+    })
+    .delimited(" ")
+}
+
 /// Initializes the tracing subscriber for logging.
 ///
 /// Configures the logging level and output destination (stderr or a file).
@@ -34,6 +48,7 @@ pub fn init(trace_level : &TraceLevel, trace_output : &String) {
         .unwrap_or_else(|_| EnvFilter::new(trace_level.as_str()));
 
     let fmt_layer = fmt::layer()
+        .fmt_fields(raw_field_formatter())
         .with_file(true)
         .with_line_number(true)
         .with_target(false)

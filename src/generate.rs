@@ -550,17 +550,17 @@ fn process_builder(builder : String) {
 
         if show_output {
             if line_has_negative {
-                eprintln!("{}", line.colored(Color::BrightRed));
+                eprintln!("{}", line.err_colored(Color::BrightRed));
             } else {
-                eprintln!("{}", line.colored(Color::BrightBlack));
+                eprintln!("{}", line.err_colored(Color::BrightBlack));
             }
 
         } else if line_has_negative {
             show_output = true;
             for past_line in &history {
-                eprintln!("{}", past_line.colored(Color::BrightBlack));
+                eprintln!("{}", past_line.err_colored(Color::BrightBlack));
             }
-            eprintln!("{}", line.colored(Color::BrightRed));
+            eprintln!("{}", line.err_colored(Color::BrightRed));
         } else {
             if history.len() == negative_show_lines {
                 history.pop_front();
@@ -577,7 +577,7 @@ fn process_builder(builder : String) {
     if !status.success() {
         if !show_output {
             for line in full_output {
-                eprintln!("{}", line.colored(Color::BrightBlack));
+                eprintln!("{}", line.err_colored(Color::BrightBlack));
             }
         }
         tracing::error!("Build command failed with status: {:?}", status);
@@ -586,7 +586,7 @@ fn process_builder(builder : String) {
 
     let start_line = full_output.len().saturating_sub(success_show_lines);
     for line in &full_output[start_line..] {
-        eprintln!("{}", line.colored(Color::BrightBlack));
+        eprintln!("{}", line.err_colored(Color::BrightBlack));
     }
 
     tracing::info!("Build command successful");
